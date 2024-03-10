@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "project-name"
+version = "0.0.1"
+# Template Version: 0.2.2
+# Add scheduled job example
+description = ""
+authors = ["Petr Lavrov <calmmage@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.8"
+# for stability, use frozen-app-name branch
+calmlib = { git = "https://github.com/calmmage/calmlib.git", branch = "main" }
+#calmmage = { git = "https://github.com/calmmage/calmmage.git", branch = "main" }
+pytest = "*"
+# logging
+loguru = "*"
+
+
+[tool.poetry.group.dev.dependencies]
+jupyter = ">=1.0.0"
+tqdm = "*"
+# pandas = "2.1.0"
+black = "*"
+pre-commit = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
