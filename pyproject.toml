@@ -15,6 +15,7 @@ calmlib = { git = "https://github.com/calmmage/calmlib.git", branch = "main" }
 pytest = "*"
 # logging
 loguru = "*"
+toml = "*"
 
 aiogram = "*"
 
