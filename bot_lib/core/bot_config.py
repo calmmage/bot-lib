@@ -1,5 +1,7 @@
+from aiogram import types
 from aiogram.filters import Command
 
+from bot_lib import HandlerDisplayMode
 from bot_lib.core.app import App
 from bot_lib.handlers.basic_handler import BasicHandler
 
@@ -26,14 +28,41 @@ def setup_dispatcher(dispatcher, bot_config: BotConfig, extra_handlers=None):
     if extra_handlers:
         handlers += extra_handlers
 
+    # step 1 - build commands list
+    commands = []
+
     for handler in handlers:
         dispatcher.startup.register(handler.on_startup)
 
+        # todo: add other display modes processing
         for command, aliases in handler.commands.items():
+            # register commands
             dispatcher.message.register(getattr(handler, command), Command(aliases))
 
-        # todo: setup help command somehow - add info to the app?
-        #  for the handlers that only have 'help' visibility
+            # todo: use calmlib util - 'compare enums' - find wind find_ and add to calmlib
+            if handler.display_mode == HandlerDisplayMode.FULL:
+                # commands descriptions
+                if isinstance(aliases, str):
+                    aliases = [aliases]
+                for alias in aliases:
+                    commands.append((alias, getattr(handler, command).__doc__))
+            elif handler.display_mode == HandlerDisplayMode.HELP_COMMAND:
+                # todo: setup help command somehow - add info to the app?
+                #  for the handlers that only have 'help' visibility
+                pass
+
+    # here's an example:
+    NO_COMMAND_DESCRIPTION = "No description"
+
+    # todo: make this less ugly
+    async def _set_aiogram_bot_commands(bot):
+        bot_commands = [
+            types.BotCommand(command=c, description=d or NO_COMMAND_DESCRIPTION)
+            for c, d in commands
+        ]
+        await bot.set_my_commands(bot_commands)
+
+    dispatcher.startup.register(_set_aiogram_bot_commands)
 
 
 def setup_bot(bot, bot_config: BotConfig, extra_handlers=None):
