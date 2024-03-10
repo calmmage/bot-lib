@@ -1,8 +1,10 @@
 from aiogram import types
 from aiogram.filters import Command
 
-from bot_lib import HandlerDisplayMode
+# todo: use calmlib logger
+from loguru import logger
 from bot_lib.core.app import App
+from bot_lib.handlers.handler import HandlerDisplayMode
 from bot_lib.handlers.basic_handler import BasicHandler
 
 
@@ -37,7 +39,9 @@ def setup_dispatcher(dispatcher, bot_config: BotConfig, extra_handlers=None):
         # todo: add other display modes processing
         for command, aliases in handler.commands.items():
             # register commands
-            dispatcher.message.register(getattr(handler, command), Command(aliases))
+            dispatcher.message.register(
+                getattr(handler, command), Command(commands=aliases)
+            )
 
             # todo: use calmlib util - 'compare enums' - find wind find_ and add to calmlib
             if handler.display_mode == HandlerDisplayMode.FULL:
@@ -56,10 +60,18 @@ def setup_dispatcher(dispatcher, bot_config: BotConfig, extra_handlers=None):
 
     # todo: make this less ugly
     async def _set_aiogram_bot_commands(bot):
-        bot_commands = [
-            types.BotCommand(command=c, description=d or NO_COMMAND_DESCRIPTION)
-            for c, d in commands
-        ]
+        # assert all commands are lowercase and unique
+        bot_commands = []
+        for c, d in commands:
+            if not c.islower():
+                raise ValueError(f"Command is not lowercase: {c}")
+            if c in [bc.command for bc in bot_commands]:
+                logger.warning(f"Duplicate command: {c}")
+                continue
+            bot_commands.append(
+                types.BotCommand(command=c, description=d or NO_COMMAND_DESCRIPTION)
+            )
+        logger.debug(f"Setting bot commands: {bot_commands}")
         await bot.set_my_commands(bot_commands)
 
     dispatcher.startup.register(_set_aiogram_bot_commands)
