@@ -8,7 +8,7 @@ from aiogram import Dispatcher, types
 from dotenv import load_dotenv
 
 from bot_lib.demo import create_bot, configure_commands_and_dispatcher, run_bot, \
-    setup_dispatcher_with_hanlder
+    setup_dispatcher_with_demo_handler
 
 load_dotenv()
 
@@ -22,7 +22,7 @@ def setup_and_run_bot():
     # --- start bot-lib part ---
     # ----------------------------------------------
 
-    setup_dispatcher_with_hanlder(dp)
+    setup_dispatcher_with_demo_handler(dp)
 
     # ----------------------------------------------
     # --- end bot-lib part ---

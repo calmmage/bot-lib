@@ -39,7 +39,7 @@ def run_bot(dp, bot):
     asyncio.run(dp.start_polling(bot))
 
 
-def setup_dispatcher_with_hanlder(dp):
+def setup_dispatcher_with_demo_handler(dp):
     """
     Idea: register a help command from the handler - manually
     :param dp:

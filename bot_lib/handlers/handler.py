@@ -1,6 +1,6 @@
 import abc
 import enum
-from typing import List
+from typing import List, Dict
 
 from aiogram import Bot
 
@@ -19,6 +19,7 @@ class HandlerDisplayMode(enum.Enum):
 class Handler(abc.ABC):
     name: str = None
     display_mode: HandlerDisplayMode = HandlerDisplayMode.HELP_COMMAND
+    commands: Dict[str, List[str]] = None
     plugins_required: List[str] = None
 
     def __init__(self):

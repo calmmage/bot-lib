@@ -16,7 +16,7 @@ from aiogram.types import Message
 from aiogram.utils.markdown import hbold
 from dotenv import load_dotenv
 
-from bot_lib.demo import setup_dispatcher_with_hanlder
+from bot_lib.demo import setup_dispatcher_with_demo_handler
 
 load_dotenv()
 # Bot token can be obtained via https://t.me/BotFather
@@ -43,7 +43,7 @@ async def command_start_handler(message: Message) -> None:
 # --- start bot-lib part ---
 # ----------------------------------------------
 
-setup_dispatcher_with_hanlder(dp)
+setup_dispatcher_with_demo_handler(dp)
 
 
 # ----------------------------------------------
