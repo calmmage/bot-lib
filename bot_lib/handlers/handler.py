@@ -1,7 +1,7 @@
 import abc
 import enum
 from typing import List, Dict
-
+from bot_lib.migration_bot_base.core.telegram_bot import TelegramBot as OldTelegramBot
 from aiogram import Bot
 
 
@@ -16,7 +16,7 @@ class HandlerDisplayMode(enum.Enum):
 
 
 # abstract
-class Handler(abc.ABC):
+class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTelegramBot
     name: str = None
     display_mode: HandlerDisplayMode = HandlerDisplayMode.HELP_COMMAND
     commands: Dict[str, List[str]] = None

@@ -2,9 +2,10 @@ from bot_lib.plugins import Plugin, GptPlugin
 
 # from bot_lib.plugins import GptPlugin
 from typing import List, Type
+from bot_lib.migration_bot_base.core.app import App as OldApp
 
 
-class App:
+class App(OldApp):
     def __init__(self, plugins: List[Type[Plugin]] = None):
         if plugins is None:
             plugins = []
