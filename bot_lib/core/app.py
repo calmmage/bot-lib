@@ -6,6 +6,10 @@ from bot_lib.migration_bot_base.core.app import App as OldApp
 
 
 class App(OldApp):
+    start_message = "Hello, I'm a bot. How can I help you?"
+
+    help_message = "Help! I need somebody! Help! Not just anybody! Help! You know I need someone! Help!"
+
     def __init__(self, plugins: List[Type[Plugin]] = None):
         if plugins is None:
             plugins = []
@@ -16,3 +20,11 @@ class App(OldApp):
         if "gpt" not in self.plugins:
             raise AttributeError("GPT plugin is not enabled.")
         return self.plugins["gpt"]
+
+    # @property
+
+    def get_start_message(self):
+        return self.start_message
+
+    def get_help_message(self):
+        return self.help_message

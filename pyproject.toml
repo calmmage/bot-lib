@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bot-lib"
-version = "0.2.0" # add bot-base codebase
+version = "0.2.1" # upgrade features required for fairytale-bot
 # Template Version: 0.2.2
 # Add scheduled job example
 description = ""
@@ -21,7 +21,7 @@ openai = ">=1.0.0"
 
 aiogram = ">=3.4"
 
-pydantic = ">2.0"
+pydantic = ">=2.5.0"
 pydantic-settings = ">=2.0.0"
 mongoengine = ">=0.28.0"
 pydub = ">=0.25.1"
