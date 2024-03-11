@@ -1,8 +1,10 @@
-import abc
 import enum
 from typing import List, Dict
-from bot_lib.migration_bot_base.core.telegram_bot import TelegramBot as OldTelegramBot
+
 from aiogram import Bot
+from deprecated import deprecated
+
+from bot_lib.migration_bot_base.core.telegram_bot import TelegramBot as OldTelegramBot
 
 
 class HandlerDisplayMode(enum.Enum):
@@ -32,3 +34,8 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
     async def send_safe(self, message: str, chat_id: int):
         # await self.bot.send_message(chat_id, message)
         raise NotImplementedError("Method send_safe is not implemented")
+
+    @property
+    @deprecated(version="1.0.0", reason="Found old (pre-migration) style usage of _aiogram_bot. please rework and replace with self.bot")
+    def _aiogram_bot(self):
+        return self.bot

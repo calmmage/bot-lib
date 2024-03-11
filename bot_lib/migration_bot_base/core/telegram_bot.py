@@ -28,16 +28,16 @@ from textwrap import dedent
 from typing import TYPE_CHECKING, Union, Optional
 from typing import Type, List, Dict
 
-from bot_base.core import TelegramBotConfig
-from bot_base.utils import tools_dir
-from bot_base.utils.text_utils import (
+from bot_lib.migration_bot_base.core import TelegramBotConfig
+from bot_lib.migration_bot_base.utils import tools_dir
+from bot_lib.migration_bot_base.utils.text_utils import (
     MAX_TELEGRAM_MESSAGE_LENGTH,
     split_long_message,
     escape_md,
 )
 
 if TYPE_CHECKING:
-    from bot_base.core import App
+    from bot_lib.migration_bot_base.core import App
 
 
 class CommandRegistryItem(BaseModel):

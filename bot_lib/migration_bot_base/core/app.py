@@ -9,15 +9,15 @@ import openai
 from dotenv import load_dotenv
 
 # from apscheduler.triggers.interval import IntervalTrigger
-from bot_base.core import DatabaseConfig, TelegramBotConfig
-from bot_base.core.app_config import AppConfig
-from bot_base.core.telegram_bot import TelegramBot
-from bot_base.utils.audio_utils import (
+from bot_lib.migration_bot_base.core import DatabaseConfig, TelegramBotConfig
+from bot_lib.migration_bot_base.core.app_config import AppConfig
+from bot_lib.migration_bot_base.core.telegram_bot import TelegramBot
+from bot_lib.migration_bot_base.utils.audio_utils import (
     DEFAULT_PERIOD,
     DEFAULT_BUFFER,
     split_and_transcribe_audio,
 )
-from bot_base.utils.gpt_utils import Audio
+from bot_lib.migration_bot_base.utils.gpt_utils import Audio
 
 
 class AppBase:

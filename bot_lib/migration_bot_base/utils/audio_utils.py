@@ -7,7 +7,7 @@ import loguru
 import tqdm
 from pydub import AudioSegment
 
-from bot_base.utils.gpt_utils import (
+from bot_lib.migration_bot_base.utils.gpt_utils import (
     Audio,
     atranscribe_audio,
     transcribe_audio,
