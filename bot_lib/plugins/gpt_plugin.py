@@ -71,7 +71,7 @@ class GptPlugin(Plugin):
             messages=messages,
             max_tokens=max_tokens,
         )
-        finish_reason = response.choices[0].message.finish_reason
+        finish_reason = response.choices[0].finish_reason
         if finish_reason != "stop":
             logger.warning(
                 f"Completion stopped due to the following reason: {finish_reason}"
