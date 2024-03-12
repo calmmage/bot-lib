@@ -4,6 +4,7 @@ Idea: make the code as close to basic aiogram example as possible
 modify echo-bot incorporating bot-lib features to showcase how it's done
 
 """
+
 import asyncio
 import logging
 import sys
@@ -49,6 +50,7 @@ setup_dispatcher_with_demo_handler(dp)
 # ----------------------------------------------
 # --- end bot-lib part ---
 # ----------------------------------------------
+
 
 @dp.message()
 async def echo_handler(message: types.Message) -> None:
