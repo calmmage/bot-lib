@@ -504,43 +504,6 @@ class TelegramBot(TelegramBotBase):
 
         return result
 
-    async def _extract_message_text(
-        self, message: types.Message, as_markdown=False
-    ) -> str:
-        result = ""
-        # option 1: message text
-        if message.text:
-            if as_markdown:
-                result += message.md_text
-            else:
-                result += message.text
-        # option 2: caption
-        if message.caption:
-            if as_markdown:
-                logger.warning("Markdown captions are not supported yet")
-            result += message.caption
-
-        # option 3: voice/video message
-        if message.voice or message.audio:
-            # todo: accept voice message? Seems to work
-            chunks = await self._process_voice_message(message)
-            result += "\n\n".join(chunks)
-        # todo: accept files?
-        if message.document and message.document.mime_type == "text/plain":
-            self.logger.info(f"Received text file: {message.document.file_name}")
-            file = await self._aiogram_bot.download(message.document.file_id)
-            content = file.read().decode("utf-8")
-            result += f"\n\n{content}"
-        # todo: accept video messages?
-        # if message.document:
-
-        # todo: extract text from Replies? No, do that explicitly
-
-        # option 4: content - only extract if explicitly asked?
-        # support multi-message content extraction?
-        # todo: ... if content_parsing_mode is enabled - parse content text
-        return result
-
     async def _process_voice_message(self, message, parallel=None):
         # extract and parse message with whisper api
         # todo: use smart filters for voice messages?
@@ -565,17 +528,6 @@ class TelegramBot(TelegramBotBase):
             return await self.download_large_file(
                 message.chat.username, message.message_id, target_path=file_path
             )
-
-    async def _extract_text_from_message(self, message: types.Message):
-        result = await self._extract_message_text(message)
-
-        if message.reply_to_message:
-            self.logger.info(f"Detected reply message. Extracting text")
-            reply_text = await self._extract_message_text(message.reply_to_message)
-            self.logger.debug(f"Text extracted", data=reply_text)
-            result += f"\n\n{reply_text}"
-
-        return result
 
     @mark_command(commands=["multistart"], description="Start multi-message mode")
     async def multi_message_start(self, message: types.Message):

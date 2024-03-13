@@ -4,9 +4,11 @@ from typing import List, Dict
 from aiogram import Bot
 from aiogram.types import Message
 from deprecated import deprecated
-
+from calmlib.utils import get_logger
 from bot_lib.migration_bot_base.core.telegram_bot import TelegramBot as OldTelegramBot
 from bot_lib.core.app import App
+
+logger = get_logger(__name__)
 
 
 class HandlerDisplayMode(enum.Enum):
@@ -52,11 +54,27 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
 
     @staticmethod
     def get_user(message, forward_priority=False):
-        if forward_priority and hasattr(message, "forward_from"):
+        if (
+            forward_priority
+            and hasattr(message, "forward_from")
+            and message.forward_from
+        ):
             user = message.forward_from
         else:
             user = message.from_user
         return user.username or user.id
+
+    @staticmethod
+    def get_name(message, forward_priority=False):
+        if (
+            forward_priority
+            and hasattr(message, "forward_from")
+            and message.forward_from
+        ):
+            user = message.forward_from
+        else:
+            user = message.from_user
+        return user.full_name
 
     def _build_commands_and_add_to_list(self):
         for app_func_name, handler_func_name in self.get_commands:
@@ -112,3 +130,57 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
             if len(parts) > 1:
                 return parts[1].strip()
             return ""
+
+    async def _extract_message_text(
+        self,
+        message: Message,
+        as_markdown=False,
+        include_reply=False,
+    ) -> str:
+        result = ""
+        # option 1: message text
+        if message.text:
+            if as_markdown:
+                result += message.md_text
+            else:
+                result += message.text
+        # option 2: caption
+        if message.caption:
+            if as_markdown:
+                logger.warning("Markdown captions are not supported yet")
+            result += message.caption
+
+        # option 3: voice/video message
+        if message.voice or message.audio:
+            # todo: accept voice message? Seems to work
+            chunks = await self._process_voice_message(message)
+            result += "\n\n".join(chunks)
+        # todo: accept files?
+        if message.document and message.document.mime_type == "text/plain":
+            self.logger.info(f"Received text file: {message.document.file_name}")
+            file = await self._aiogram_bot.download(message.document.file_id)
+            content = file.read().decode("utf-8")
+            result += f"\n\n{content}"
+        # todo: accept video messages?
+        # if message.document:
+
+        # todo: extract text from Replies? No, do that explicitly
+        if (
+            include_reply
+            and hasattr(message, "reply_to_message")
+            and message.reply_to_message
+        ):
+            reply_text = await self._extract_message_text(message.reply_to_message)
+            result += f"\n\n{reply_text}"
+
+        # option 4: content - only extract if explicitly asked?
+        # support multi-message content extraction?
+        # todo: ... if content_parsing_mode is enabled - parse content text
+        return result
+
+    @deprecated(
+        version="1.0.0",
+        reason="Use _extract_message_text instead. This method is deprecated",
+    )
+    async def _extract_text_from_message(self, message: Message):
+        return await self._extract_message_text(message, include_reply=True)

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bot-lib"
-version = "0.3.1" # move openai import inside the plugin init
+version = "0.3.2" # move extract_message_text to handler
 # Template Version: 0.2.2
 # Add scheduled job example
 description = ""
