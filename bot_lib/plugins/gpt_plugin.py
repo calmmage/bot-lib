@@ -1,5 +1,4 @@
 from bot_lib.plugins import Plugin
-from openai import AsyncOpenAI
 import os
 from dotenv import load_dotenv
 from calmlib.utils import get_logger
@@ -22,6 +21,8 @@ class GptPlugin(Plugin):
                 "Please provide it as an argument "
                 "or in the environment variable OPENAI_API_KEY."
             )
+        from openai import AsyncOpenAI
+
         self._gpt = AsyncOpenAI(api_key=api_key)
         # self._gpt.api_key = api_key
 
