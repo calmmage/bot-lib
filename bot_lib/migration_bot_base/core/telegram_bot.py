@@ -1,5 +1,5 @@
 from collections import defaultdict, deque
-
+from loguru import logger
 import aiogram
 import asyncio
 import json
@@ -504,14 +504,22 @@ class TelegramBot(TelegramBotBase):
 
         return result
 
-    async def _extract_message_text(self, message: types.Message) -> str:
+    async def _extract_message_text(
+        self, message: types.Message, as_markdown=False
+    ) -> str:
         result = ""
         # option 1: message text
         if message.text:
-            result += message.md_text
+            if as_markdown:
+                result += message.md_text
+            else:
+                result += message.text
         # option 2: caption
         if message.caption:
+            if as_markdown:
+                logger.warning("Markdown captions are not supported yet")
             result += message.caption
+
         # option 3: voice/video message
         if message.voice or message.audio:
             # todo: accept voice message? Seems to work
@@ -525,6 +533,8 @@ class TelegramBot(TelegramBotBase):
             result += f"\n\n{content}"
         # todo: accept video messages?
         # if message.document:
+
+        # todo: extract text from Replies? No, do that explicitly
 
         # option 4: content - only extract if explicitly asked?
         # support multi-message content extraction?
