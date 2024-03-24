@@ -184,3 +184,17 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
     )
     async def _extract_text_from_message(self, message: Message):
         return await self._extract_message_text(message, include_reply=True)
+
+    def _get_short_description(self, name):
+        desc = getattr(self, name).__doc__.strip()
+        if not desc:
+            return ""
+        return desc.splitlines()[0]
+
+    async def nested_help_handler(self, message: Message):
+        # return list of commands
+        help_message = "Available commands:\n"
+        for command, aliases in self.commands.items():
+            help_message += f"/{command}\n"
+            help_message += f"  {self._get_short_description(command)}\n"
+        await message.reply(help_message)

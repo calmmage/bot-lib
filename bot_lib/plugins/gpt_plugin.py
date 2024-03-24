@@ -58,7 +58,9 @@ class GptPlugin(Plugin):
         model: str = "gpt-3.5-turbo",
         max_tokens: int = 100,
         warmup_messages=None,
+        temperature: float = 0.5,
         system="You are a helpful assistant.",
+        **kwargs,
     ):
         # todo: sanity check token counts for the limits
         messages = [
@@ -70,7 +72,9 @@ class GptPlugin(Plugin):
         response = await self._gpt.chat.completions.create(
             model=model,
             messages=messages,
+            temperature=temperature,
             max_tokens=max_tokens,
+            **kwargs,
         )
         finish_reason = response.choices[0].finish_reason
         if finish_reason != "stop":

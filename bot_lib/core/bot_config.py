@@ -1,4 +1,4 @@
-from aiogram import types
+from aiogram import types, Router, Bot
 from aiogram.filters import Command
 
 # todo: use calmlib logger
@@ -36,10 +36,14 @@ def setup_dispatcher(dispatcher, bot_config: BotConfig, extra_handlers=None):
     for handler in handlers:
         dispatcher.startup.register(handler.on_startup)
 
+        router = Router(name=handler.name)
+        # dispatcher[handler.name] = router
+        dispatcher.include_router(router)
+
         # todo: add other display modes processing
         for command, aliases in handler.commands.items():
             # register commands
-            dispatcher.message.register(
+            router.message.register(
                 getattr(handler, command), Command(commands=aliases)
             )
 
@@ -50,10 +54,15 @@ def setup_dispatcher(dispatcher, bot_config: BotConfig, extra_handlers=None):
                     aliases = [aliases]
                 for alias in aliases:
                     commands.append((alias, getattr(handler, command).__doc__))
-            elif handler.display_mode == HandlerDisplayMode.HELP_COMMAND:
-                # todo: setup help command somehow - add info to the app?
-                #  for the handlers that only have 'help' visibility
-                pass
+            elif handler.display_mode == HandlerDisplayMode.HELP_MESSAGE:
+                # todo: rework this to store the whole handler class
+                #  then if general 'help' is called - list available handlers
+                #  if /help <handler> is called - list commands for that handler
+                bot_config.app.hidden_commands[handler.name].extend(aliases)
+
+        if handler.display_mode == HandlerDisplayMode.HELP_COMMAND:
+            alias = f"help_{handler.name}"
+            commands.append((alias, handler.nested_help_handler))
 
     # here's an example:
     NO_COMMAND_DESCRIPTION = "No description"
@@ -75,6 +84,13 @@ def setup_dispatcher(dispatcher, bot_config: BotConfig, extra_handlers=None):
         await bot.set_my_commands(bot_commands)
 
     dispatcher.startup.register(_set_aiogram_bot_commands)
+
+    async def print_bot_url(bot: Bot):
+        bot_info = await bot.get_me()
+        # logger.info(f"Bot info: {bot_info}")
+        logger.info(f"Bot url: https://t.me/{bot_info.username}")
+
+    dispatcher.startup.register(print_bot_url)
 
 
 def setup_bot(bot, bot_config: BotConfig, extra_handlers=None):
