@@ -753,7 +753,10 @@ class TelegramBot(TelegramBotBase):
     # -----------------------------------------------------
 
     _ping_replies_path = Path(__file__).parent / "ping_replies.txt"
-    ping_replies = _ping_replies_path.read_text().splitlines()
+    try:
+        ping_replies = _ping_replies_path.read_text().splitlines()
+    except:
+        ping_replies = ["Failed to load fancy pongs, so you get this: Pong"]
 
     @mark_command(commands="ping", description="Ping the bot")
     async def ping_handler(self, message: types.Message):
