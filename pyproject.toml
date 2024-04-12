@@ -43,6 +43,12 @@ tqdm = "*"
 black = "*"
 pre-commit = "*"
 
+openai = ">=1.0.0"
+langchain = "*"
+langchain-anthropic = "*"
+langchain-openai = "*"
+
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
