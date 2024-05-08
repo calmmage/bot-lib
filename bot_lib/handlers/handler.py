@@ -36,6 +36,12 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         self.bot = None
         self._build_commands_and_add_to_list()
 
+    # abstract method chat_handler - to be implemented by child classes
+    has_chat_handler = False
+    # todo: rework into property / detect automatically
+    async def chat_handler(self, message: Message, app: App):
+        raise NotImplementedError("Method chat_handler is not implemented")
+
     # todo: check if I can pass the bot on startup - automatically by dispatcher?
     def on_startup(self, bot: Bot):
         self.bot = bot

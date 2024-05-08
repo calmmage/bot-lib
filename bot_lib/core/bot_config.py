@@ -64,6 +64,9 @@ def setup_dispatcher(dispatcher, bot_config: BotConfig, extra_handlers=None):
             alias = f"help_{handler.name}"
             commands.append((alias, handler.nested_help_handler))
 
+        if handler.has_chat_handler:
+            dispatcher.message.register(handler.chat_handler)
+
     # here's an example:
     NO_COMMAND_DESCRIPTION = "No description"
 

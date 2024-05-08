@@ -80,7 +80,7 @@ class FairytaleHandler(Handler):
     FAIRYTALE_TOKEN_LIMIT = 1000
 
     async def fairytale_handler(self, message: Message, app: App):
-        """Tell a fairytale on a sepcified topic and fabulate it."""
+        """Tell a fairytale on a specified topic and fabulate it."""
         text = message.text
         prompt = self.fairytale_prompt.format(text=text)
         response = await app.gpt.complete_text(
