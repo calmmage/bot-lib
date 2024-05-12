@@ -30,11 +30,7 @@ from typing import Type, List, Dict
 
 from bot_lib.migration_bot_base.core import TelegramBotConfig
 from bot_lib.migration_bot_base.utils import tools_dir
-from bot_lib.migration_bot_base.utils.text_utils import (
-    MAX_TELEGRAM_MESSAGE_LENGTH,
-    split_long_message,
-    escape_md,
-)
+
 
 if TYPE_CHECKING:
     from bot_lib.migration_bot_base.core import App
@@ -442,68 +438,6 @@ class TelegramBot(TelegramBotBase):
 
     # ------------------------------------------------------------
 
-    def _parse_message_text(self, message_text: str) -> dict:
-        result = {}
-        # drop the /command part if present
-        if message_text.startswith("/"):
-            _, message_text = message_text.split(" ", 1)
-
-        # if it's not code - parse hashtags
-        if "#code" in message_text:
-            hashtags, message_text = message_text.split("#code", 1)
-            # result.update(self._parse_attributes(hashtags))
-            if message_text.strip():
-                result["description"] = message_text
-        elif "```" in message_text:
-            hashtags, _ = message_text.split("```", 1)
-            result.update(self._parse_attributes(hashtags))
-            result["description"] = message_text
-        else:
-            result.update(self._parse_attributes(message_text))
-            result["description"] = message_text
-        return result
-
-    hashtag_re = re.compile(r"#\w+")
-    attribute_re = re.compile(r"(\w+)=(\w+)")
-    # todo: make abstract
-    # todo: add docstring / help string/ a way to view this list of
-    #  recognized tags. Log when a tag is recognized
-    # recognized_hashtags = {  # todo: add tags or type to preserve info
-    #     '#idea': {'queue': 'ideas'},
-    #     '#task': {'queue': 'tasks'},
-    #     '#shopping': {'queue': 'shopping'},
-    #     '#recommendation': {'queue': 'recommendations'},
-    #     '#feed': {'queue': 'feed'},
-    #     '#content': {'queue': 'content'},
-    #     '#feedback': {'queue': 'feedback'}
-    # }
-    # todo: how do I add a docstring / example of the proper format?
-    recognized_hashtags: Dict[str, Dict[str, str]] = {}
-
-    def _parse_attributes(self, text):
-        result = {}
-        # use regex to extract hashtags
-        # parse hashtags
-        hashtags = self.hashtag_re.findall(text)
-        # if hashtag is recognized - parse it
-        for hashtag in hashtags:
-            if hashtag in self.recognized_hashtags:
-                self.logger.debug(f"Recognized hashtag: {hashtag}")
-                # todo: support combining multiple queues / tags
-                #  e.g. #idea #task -> queues = [ideas, tasks]
-                result.update(self.recognized_hashtags[hashtag])
-            else:
-                self.logger.debug(f"Custom hashtag: {hashtag}")
-                result[hashtag[1:]] = True
-
-        # parse explicit keys like queue=...
-        attributes = self.attribute_re.findall(text)
-        for key, value in attributes:
-            self.logger.debug(f"Recognized attribute: {key}={value}")
-            result[key] = value
-
-        return result
-
     async def _process_voice_message(self, message, parallel=None):
         # extract and parse message with whisper api
         # todo: use smart filters for voice messages?
@@ -579,115 +513,6 @@ class TelegramBot(TelegramBotBase):
             #  to support parsing of the videos and other applied modifiers
             messages_text += await self._extract_message_text(message)
         return self._parse_message_text(messages_text)
-
-    PREVIEW_CUTOFF = 500
-
-    async def send_safe(
-        self,
-        text: str,
-        chat_id: int,
-        reply_to_message_id=None,
-        filename=None,
-        escape_markdown=False,
-        wrap=True,
-        parse_mode=None,
-    ):
-        if wrap:
-            lines = text.split("\n")
-            new_lines = [textwrap.fill(line, width=88) for line in lines]
-            text = "\n".join(new_lines)
-        # todo: add 3 send modes - always text, always file, auto
-        if self.send_long_messages_as_files:
-            if len(text) > MAX_TELEGRAM_MESSAGE_LENGTH:
-                if filename is None:
-                    filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
-                if self.config.send_preview_for_long_messages:
-                    preview = text[: self.PREVIEW_CUTOFF]
-                    if escape_markdown:
-                        preview = escape_md(preview)
-                    await self._aiogram_bot.send_message(
-                        chat_id,
-                        dedent(
-                            f"""
-                            Message is too long, sending as file {escape_md(filename)} 
-                            Preview: 
-                            """
-                        )
-                        + preview
-                        + "...",
-                    )
-
-                await self._send_as_file(
-                    chat_id,
-                    text,
-                    reply_to_message_id=reply_to_message_id,
-                    filename=filename,
-                )
-            else:  # len(text) < MAX_TELEGRAM_MESSAGE_LENGTH:
-                message_text = text
-                if escape_markdown:
-                    message_text = escape_md(text)
-                if filename:
-                    message_text = escape_md(filename) + "\n" + message_text
-                await self._send_with_parse_mode_fallback(
-                    text=message_text,
-                    chat_id=chat_id,
-                    reply_to_message_id=reply_to_message_id,
-                    parse_mode=parse_mode,
-                )
-        else:  # not self.send_long_messages_as_files
-            for chunk in split_long_message(text):
-                if escape_markdown:
-                    chunk = escape_md(chunk)
-                await self._send_with_parse_mode_fallback(
-                    chat_id,
-                    chunk,
-                    reply_to_message_id=reply_to_message_id,
-                    parse_mode=parse_mode,
-                )
-
-    async def _send_with_parse_mode_fallback(
-        self, chat_id, text, reply_to_message_id=None, parse_mode=None
-    ):
-        """
-        Send message with parse_mode=None if parse_mode is not supported
-        """
-        if parse_mode is None:
-            parse_mode = self.config.parse_mode
-        try:
-            await self._aiogram_bot.send_message(
-                chat_id,
-                text,
-                reply_to_message_id=reply_to_message_id,
-                parse_mode=parse_mode,
-            )
-        except Exception:
-            self.logger.warning(
-                f"Failed to send message with parse_mode={parse_mode}. "
-                f"Retrying with parse_mode=None"
-                f"Exception: {traceback.format_exc()}"
-                # todo , data=traceback.format_exc()
-            )
-            await self._aiogram_bot.send_message(
-                chat_id,
-                text,
-                reply_to_message_id=reply_to_message_id,
-                parse_mode=None,
-            )
-
-    async def _send_as_file(
-        self, chat_id, text, reply_to_message_id=None, filename=None
-    ):
-        from aiogram.types.input_file import BufferedInputFile
-
-        temp_file = BufferedInputFile(text.encode("utf-8"), filename)
-        await self._aiogram_bot.send_document(
-            chat_id, temp_file, reply_to_message_id=reply_to_message_id
-        )
-
-    @property
-    def send_long_messages_as_files(self):
-        return self.config.send_long_messages_as_files
 
     async def bootstrap(self):
         self.register_command(self.start, "start", "Start command")

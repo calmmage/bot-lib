@@ -1,12 +1,21 @@
 import enum
-from typing import List, Dict, Union
-
+import re
+import textwrap
+import traceback
 from aiogram import Bot
 from aiogram.types import Message
-from deprecated import deprecated
 from calmlib.utils import get_logger
-from bot_lib.migration_bot_base.core.telegram_bot import TelegramBot as OldTelegramBot
+from datetime import datetime
+from deprecated import deprecated
+from typing import List, Dict, Union
+
 from bot_lib.core.app import App
+from bot_lib.migration_bot_base.core.telegram_bot import TelegramBot as OldTelegramBot
+from bot_lib.migration_bot_base.utils.text_utils import (
+    MAX_TELEGRAM_MESSAGE_LENGTH,
+    split_long_message,
+    escape_md,
+)
 
 logger = get_logger(__name__)
 
@@ -38,6 +47,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
 
     # abstract method chat_handler - to be implemented by child classes
     has_chat_handler = False
+
     # todo: rework into property / detect automatically
     async def chat_handler(self, message: Message, app: App):
         raise NotImplementedError("Method chat_handler is not implemented")
@@ -45,10 +55,6 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
     # todo: check if I can pass the bot on startup - automatically by dispatcher?
     def on_startup(self, bot: Bot):
         self.bot = bot
-
-    async def send_safe(self, message: str, chat_id: int):
-        # await self.bot.send_message(chat_id, message)
-        raise NotImplementedError("Method send_safe is not implemented")
 
     @property
     @deprecated(
@@ -111,24 +117,6 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
 
         return handler
 
-    async def _send_as_file(
-        self, chat_id, text, reply_to_message_id=None, filename=None
-    ):
-        """
-        Send text as a file to the chat
-        :param chat_id:
-        :param text:
-        :param reply_to_message_id:
-        :param filename:
-        :return:
-        """
-        from aiogram.types.input_file import BufferedInputFile
-
-        temp_file = BufferedInputFile(text.encode("utf-8"), filename)
-        await self.bot.send_document(
-            chat_id, temp_file, reply_to_message_id=reply_to_message_id
-        )
-
     @staticmethod
     def strip_command(text: str):
         if text.startswith("/"):
@@ -137,9 +125,9 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
                 return parts[1].strip()
             return ""
 
-    async def get_message_text(self, message: Message,
-        as_markdown=False,
-        include_reply=False) -> str:
+    async def get_message_text(
+        self, message: Message, as_markdown=False, include_reply=False
+    ) -> str:
         """
         Extract text from the message - including text, caption, voice messages, and text files
         :param message: aiogram Message object
@@ -147,41 +135,42 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         :param include_reply: include text from the message this message is replying to
         :return: extracted text concatenated from all sources
         """
-        result = await self._extract_message_text(message, as_markdown, include_reply, as_dict=True)
+        result = await self._extract_message_text(
+            message, as_markdown, include_reply, as_dict=True
+        )
         return "\n\n".join(result.values())
-
 
     async def _extract_message_text(
         self,
         message: Message,
         as_markdown=False,
         include_reply=False,
-            as_dict=False # todo: change default to True
+        as_dict=False,  # todo: change default to True
     ) -> Union[Dict, str]:
         result = {}
         # option 1: message text
         if message.text:
             if as_markdown:
-                result['text'] = message.md_text
+                result["text"] = message.md_text
             else:
-                result['text'] = message.text
+                result["text"] = message.text
         # option 2: caption
         if message.caption:
             if as_markdown:
                 logger.warning("Markdown captions are not supported yet")
-            result['caption'] = message.caption
+            result["caption"] = message.caption
 
         # option 3: voice/video message
         if message.voice or message.audio:
             # todo: accept voice message? Seems to work
             chunks = await self._process_voice_message(message)
-            result['audio'] += "\n\n".join(chunks)
+            result["audio"] += "\n\n".join(chunks)
         # todo: accept files?
         if message.document and message.document.mime_type == "text/plain":
             self.logger.info(f"Received text file: {message.document.file_name}")
             file = await self._aiogram_bot.download(message.document.file_id)
             content = file.read().decode("utf-8")
-            result['document'] += f"\n\n{content}"
+            result["document"] += f"\n\n{content}"
         # todo: accept video messages?
         # if message.document:
 
@@ -191,8 +180,13 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
             and hasattr(message, "reply_to_message")
             and message.reply_to_message
         ):
-            reply_text = await self._extract_message_text(message.reply_to_message, as_markdown=as_markdown, include_reply=False, as_dict=False)
-            result['reply_to'] = f"\n\n{reply_text}"
+            reply_text = await self._extract_message_text(
+                message.reply_to_message,
+                as_markdown=as_markdown,
+                include_reply=False,
+                as_dict=False,
+            )
+            result["reply_to"] = f"\n\n{reply_text}"
 
         # option 4: content - only extract if explicitly asked?
         # support multi-message content extraction?
@@ -221,3 +215,188 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
             help_message += f"/{command}\n"
             help_message += f"  {self._get_short_description(command)}\n"
         await message.reply(help_message)
+
+    # region text -> command args - Command Input Magic Parsing
+    def _parse_message_text(self, message_text: str) -> dict:
+        result = {}
+        # drop the /command part if present
+        message_text = self.strip_command(message_text)
+
+        # if it's not code - parse hashtags
+        if "#code" in message_text:
+            hashtags, message_text = message_text.split("#code", 1)
+            # result.update(self._parse_attributes(hashtags))
+            if message_text.strip():
+                result["description"] = message_text
+        elif "```" in message_text:
+            hashtags, _ = message_text.split("```", 1)
+            result.update(self._parse_attributes(hashtags))
+            result["description"] = message_text
+        else:
+            result.update(self._parse_attributes(message_text))
+            result["description"] = message_text
+        return result
+
+    hashtag_re = re.compile(r"#\w+")
+    attribute_re = re.compile(r"(\w+)=(\w+)")
+    # todo: make abstract
+    # todo: add docstring / help string/ a way to view this list of
+    #  recognized tags. Log when a tag is recognized
+    # recognized_hashtags = {  # todo: add tags or type to preserve info
+    #     '#idea': {'queue': 'ideas'},
+    #     '#task': {'queue': 'tasks'},
+    #     '#shopping': {'queue': 'shopping'},
+    #     '#recommendation': {'queue': 'recommendations'},
+    #     '#feed': {'queue': 'feed'},
+    #     '#content': {'queue': 'content'},
+    #     '#feedback': {'queue': 'feedback'}
+    # }
+    # todo: how do I add a docstring / example of the proper format?
+    recognized_hashtags: Dict[str, Dict[str, str]] = {}
+
+    def _parse_attributes(self, text):
+        result = {}
+        # use regex to extract hashtags
+        # parse hashtags
+        hashtags = self.hashtag_re.findall(text)
+        # if hashtag is recognized - parse it
+        for hashtag in hashtags:
+            if hashtag in self.recognized_hashtags:
+                self.logger.debug(f"Recognized hashtag: {hashtag}")
+                # todo: support combining multiple queues / tags
+                #  e.g. #idea #task -> queues = [ideas, tasks]
+                result.update(self.recognized_hashtags[hashtag])
+            else:
+                self.logger.debug(f"Custom hashtag: {hashtag}")
+                result[hashtag[1:]] = True
+
+        # parse explicit keys like queue=...
+        attributes = self.attribute_re.findall(text)
+        for key, value in attributes:
+            self.logger.debug(f"Recognized attribute: {key}={value}")
+            result[key] = value
+
+        return result
+
+    # endregion
+
+    # region send_safe - solve issues with long messages and markdown
+
+    PREVIEW_CUTOFF = 500
+
+    async def send_safe(
+        self,
+        text: str,
+        chat_id: int,
+        reply_to_message_id=None,
+        filename=None,
+        escape_markdown=False,
+        wrap=True,
+        parse_mode=None,
+    ):
+        if wrap:
+            lines = text.split("\n")
+            new_lines = [textwrap.fill(line, width=88) for line in lines]
+            text = "\n".join(new_lines)
+        # todo: add 3 send modes - always text, always file, auto
+        if self.send_long_messages_as_files:
+            if len(text) > MAX_TELEGRAM_MESSAGE_LENGTH:
+                if filename is None:
+                    filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
+                if self.config.send_preview_for_long_messages:
+                    preview = text[: self.PREVIEW_CUTOFF]
+                    if escape_markdown:
+                        preview = escape_md(preview)
+                    await self._aiogram_bot.send_message(
+                        chat_id,
+                        textwrap.dedent(
+                            f"""
+                            Message is too long, sending as file {escape_md(filename)} 
+                            Preview: 
+                            """
+                        )
+                        + preview
+                        + "...",
+                    )
+
+                await self._send_as_file(
+                    chat_id,
+                    text,
+                    reply_to_message_id=reply_to_message_id,
+                    filename=filename,
+                )
+            else:  # len(text) < MAX_TELEGRAM_MESSAGE_LENGTH:
+                message_text = text
+                if escape_markdown:
+                    message_text = escape_md(text)
+                if filename:
+                    message_text = escape_md(filename) + "\n" + message_text
+                await self._send_with_parse_mode_fallback(
+                    text=message_text,
+                    chat_id=chat_id,
+                    reply_to_message_id=reply_to_message_id,
+                    parse_mode=parse_mode,
+                )
+        else:  # not self.send_long_messages_as_files
+            for chunk in split_long_message(text):
+                if escape_markdown:
+                    chunk = escape_md(chunk)
+                await self._send_with_parse_mode_fallback(
+                    chat_id,
+                    chunk,
+                    reply_to_message_id=reply_to_message_id,
+                    parse_mode=parse_mode,
+                )
+
+    async def _send_with_parse_mode_fallback(
+        self, chat_id, text, reply_to_message_id=None, parse_mode=None
+    ):
+        """
+        Send message with parse_mode=None if parse_mode is not supported
+        """
+        if parse_mode is None:
+            parse_mode = self.config.parse_mode
+        try:
+            await self._aiogram_bot.send_message(
+                chat_id,
+                text,
+                reply_to_message_id=reply_to_message_id,
+                parse_mode=parse_mode,
+            )
+        except Exception:
+            self.logger.warning(
+                f"Failed to send message with parse_mode={parse_mode}. "
+                f"Retrying with parse_mode=None"
+                f"Exception: {traceback.format_exc()}"
+                # todo , data=traceback.format_exc()
+            )
+            await self._aiogram_bot.send_message(
+                chat_id,
+                text,
+                reply_to_message_id=reply_to_message_id,
+                parse_mode=None,
+            )
+
+    @property
+    def send_long_messages_as_files(self):
+        return self.config.send_long_messages_as_files
+
+    async def _send_as_file(
+        self, chat_id, text, reply_to_message_id=None, filename=None
+    ):
+        """
+        Send text as a file to the chat
+        :param chat_id:
+        :param text:
+        :param reply_to_message_id:
+        :param filename:
+        :return:
+        """
+        from aiogram.types.input_file import BufferedInputFile
+
+        temp_file = BufferedInputFile(text.encode("utf-8"), filename)
+        await self.bot.send_document(
+            chat_id, temp_file, reply_to_message_id=reply_to_message_id
+        )
+
+    # endregion
