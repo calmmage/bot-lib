@@ -43,4 +43,6 @@ class App(OldApp):
                 for command in commands:
                     help_message += f"/{command}\n"
 
+        return help_message
+
     hidden_commands = defaultdict(list)

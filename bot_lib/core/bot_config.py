@@ -37,8 +37,6 @@ def setup_dispatcher(dispatcher, bot_config: BotConfig, extra_handlers=None):
         dispatcher.startup.register(handler.on_startup)
 
         router = Router(name=handler.name)
-        # dispatcher[handler.name] = router
-        dispatcher.include_router(router)
 
         # todo: add other display modes processing
         for command, aliases in handler.commands.items():
@@ -65,7 +63,10 @@ def setup_dispatcher(dispatcher, bot_config: BotConfig, extra_handlers=None):
             commands.append((alias, handler.nested_help_handler))
 
         if handler.has_chat_handler:
-            dispatcher.message.register(handler.chat_handler)
+            router.message.register(handler.chat_handler)
+
+        # dispatcher[handler.name] = router
+        dispatcher.include_router(router)
 
     # here's an example:
     NO_COMMAND_DESCRIPTION = "No description"

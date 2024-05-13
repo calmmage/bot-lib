@@ -76,7 +76,7 @@ class TelegramBotBase(ABC):
         self.start_time = datetime.now()
 
         self.logger = loguru.logger.bind(component=self.__class__.__name__)
-        token = config.token.get_secret_value()
+        # token = config.token.get_secret_value()
 
         # Pyrogram
         self.pyrogram_client = self._init_pyrogram_client()
@@ -88,11 +88,11 @@ class TelegramBotBase(ABC):
                 "and some features may not work as expected"
             )
         # aiogram
-        self._aiogram_bot: aiogram.Bot = aiogram.Bot(
-            token=token  # , parse_mode=self.config.parse_mode  # plain text
-        )
-        self._dp: aiogram.Dispatcher = aiogram.Dispatcher(bot=self._aiogram_bot)
-        self._me = None
+        # self._aiogram_bot: aiogram.Bot = aiogram.Bot(
+        #     token=token  # , parse_mode=self.config.parse_mode  # plain text
+        # )
+        # self._dp: aiogram.Dispatcher = aiogram.Dispatcher(bot=self._aiogram_bot)
+        # self._me = None
 
     @property
     def downloads_dir(self):

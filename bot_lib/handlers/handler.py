@@ -10,6 +10,8 @@ from deprecated import deprecated
 from typing import List, Dict, Union
 
 from bot_lib.core.app import App
+
+from bot_lib.migration_bot_base.core import TelegramBotConfig
 from bot_lib.migration_bot_base.core.telegram_bot import TelegramBot as OldTelegramBot
 from bot_lib.migration_bot_base.utils.text_utils import (
     MAX_TELEGRAM_MESSAGE_LENGTH,
@@ -41,9 +43,10 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
     get_commands = []  # list of tuples (app_func_name, handler_func_name)
     set_commands = []  # list of tuples (app_func_name, handler_func_name)
 
-    def __init__(self):
+    def __init__(self, config: TelegramBotConfig = None):
         self.bot = None
         self._build_commands_and_add_to_list()
+        super().__init__(config=config)
 
     # abstract method chat_handler - to be implemented by child classes
     has_chat_handler = False
@@ -124,6 +127,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
             if len(parts) > 1:
                 return parts[1].strip()
             return ""
+        return text
 
     async def get_message_text(
         self, message: Message, as_markdown=False, include_reply=False
@@ -307,7 +311,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
                     preview = text[: self.PREVIEW_CUTOFF]
                     if escape_markdown:
                         preview = escape_md(preview)
-                    await self._aiogram_bot.send_message(
+                    await self.bot.send_message(
                         chat_id,
                         textwrap.dedent(
                             f"""
@@ -357,7 +361,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         if parse_mode is None:
             parse_mode = self.config.parse_mode
         try:
-            await self._aiogram_bot.send_message(
+            await self.bot.send_message(
                 chat_id,
                 text,
                 reply_to_message_id=reply_to_message_id,
@@ -370,7 +374,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
                 f"Exception: {traceback.format_exc()}"
                 # todo , data=traceback.format_exc()
             )
-            await self._aiogram_bot.send_message(
+            await self.bot.send_message(
                 chat_id,
                 text,
                 reply_to_message_id=reply_to_message_id,
