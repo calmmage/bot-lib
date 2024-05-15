@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bot-lib"
-version = "0.4.1" # return app import for back compatibility
+version = "0.4.2" # add func_handler, reply_safe and answer_safe utils
 description = "Calmmage Telegram bot library for better aiogram deployment"
 authors = ["Petr Lavrov <petrlavrov@calmmage.com>"]
 readme = "README.md"

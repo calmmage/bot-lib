@@ -405,3 +405,42 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         )
 
     # endregion
+
+    # region utils - move to the base class
+    async def reply_safe(self, response_text: str, message: Message):
+        """
+        Respond to a message with a given text
+        If the response text is too long, split it into multiple messages
+        """
+        chat_id = message.chat.id
+        await self.send_safe(response_text, chat_id)
+
+    async def answer_safe(self, response_text: str, message: Message):
+        """
+        Answer to a message with a given text
+        If the response text is too long, split it into multiple messages
+        """
+        chat_id = message.chat.id
+        await self.send_safe(
+            response_text, chat_id, reply_to_message_id=message.message_id
+        )
+
+    async def func_handler(self, func, message, async_func=False):
+        """
+        A wrapper to convert an application function into a telegram handler
+        Extract the text from the message and pass it to the function
+        Run the function and send the result as a message
+        """
+        # todo: extract kwargs from the message
+        # i think I did this code multiple times already.. - find!
+        message_text = await self.get_message_text(message)
+        # parse text into kwargs
+        message_text = self.strip_command(message_text)
+        result = self._parse_message_text(message_text)
+        if async_func:
+            response_text = await func(**result)
+        else:
+            response_text = func(**result)
+        await self.answer_safe(response_text, message)
+
+    # endregion
