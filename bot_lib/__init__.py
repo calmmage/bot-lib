@@ -1,4 +1,6 @@
 from importlib.metadata import PackageNotFoundError
+from calmapp import App
+from calmapp import plugins
 
 from .core import BotConfig, setup_dispatcher
 from .handlers import Handler, HandlerDisplayMode
