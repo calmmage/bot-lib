@@ -62,8 +62,7 @@ class TelegramBotBase(ABC):
     system_parse_mode = ParseMode.MARKDOWN_V2
 
     def __init__(self, config: _config_class = None, app_data="./app_data"):
-        self.app_data = Path(app_data)
-        self.downloads_dir.mkdir(parents=True, exist_ok=True)
+        self._app_data = Path(app_data)
 
         if config is None:
             config = self._load_config()
@@ -91,7 +90,15 @@ class TelegramBotBase(ABC):
         # self._me = None
 
     @property
+    def app_data(self):
+        if not self._app_data.exists():
+            self._app_data.mkdir(parents=True, exist_ok=True)
+        return self._app_data
+
+    @property
     def downloads_dir(self):
+        if not self.app_data.exists():
+            self.app_data.mkdir(parents=True, exist_ok=True)
         return self.app_data / "downloads"
 
     def _init_pyrogram_client(self):
@@ -217,7 +224,6 @@ class TelegramBotBase(ABC):
 
 
 command_registry: List[CommandRegistryItem] = []
-
 
 Commands = Union[str, List[str]]
 
