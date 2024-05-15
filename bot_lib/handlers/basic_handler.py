@@ -1,4 +1,5 @@
-from bot_lib.core import App
+# from bot_lib.core import App
+from calmapp import App
 
 from bot_lib.handlers import Handler, HandlerDisplayMode
 

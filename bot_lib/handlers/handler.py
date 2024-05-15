@@ -9,7 +9,8 @@ from datetime import datetime
 from deprecated import deprecated
 from typing import List, Dict, Union
 
-from bot_lib.core.app import App
+# from bot_lib.core.app import App
+from calmapp import App
 
 from bot_lib.migration_bot_base.core import TelegramBotConfig
 from bot_lib.migration_bot_base.core.telegram_bot import TelegramBot as OldTelegramBot

@@ -9,9 +9,9 @@ from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 from aiogram.utils.markdown import hbold
+from calmapp import App
 from dotenv import load_dotenv
 
-from bot_lib.core import App
 from bot_lib.handlers import Handler, BasicHandler, HandlerDisplayMode
 
 

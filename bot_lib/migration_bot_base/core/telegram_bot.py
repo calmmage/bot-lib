@@ -1,36 +1,32 @@
-from collections import defaultdict, deque
-from loguru import logger
-import aiogram
 import asyncio
 import json
-import loguru
 import os
 import pprint
-import pyrogram
 import random
-import re
 import subprocess
-import textwrap
 import traceback
 from abc import ABC, abstractmethod
+from collections import defaultdict, deque
+from datetime import datetime
+from functools import wraps
+from io import BytesIO
+from pathlib import Path
+from tempfile import mkstemp
+from textwrap import dedent
+from typing import TYPE_CHECKING, Union, Optional
+from typing import Type, List
+
+import loguru
+import pyrogram
 from aiogram import F
 from aiogram import types
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
-from datetime import datetime
 from dotenv import load_dotenv
-from functools import wraps
-from io import BytesIO
-from pathlib import Path
 from pydantic import BaseModel
-from tempfile import mkstemp
-from textwrap import dedent
-from typing import TYPE_CHECKING, Union, Optional
-from typing import Type, List, Dict
 
 from bot_lib.migration_bot_base.core import TelegramBotConfig
 from bot_lib.migration_bot_base.utils import tools_dir
-
 
 if TYPE_CHECKING:
     from bot_lib.migration_bot_base.core import App

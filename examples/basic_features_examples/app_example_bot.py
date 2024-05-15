@@ -3,9 +3,10 @@ from typing import List
 from aiogram import Dispatcher
 from aiogram.filters import Command
 from aiogram.types import Message
+from calmapp import App
 from dotenv import load_dotenv
 
-from bot_lib import App, Handler, HandlerDisplayMode
+from bot_lib import Handler, HandlerDisplayMode
 from bot_lib.demo import create_bot, run_bot
 
 

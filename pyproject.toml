@@ -1,9 +1,7 @@
 [tool.poetry]
 name = "bot-lib"
-version = "0.3.6" # bugfix
-# Template Version: 0.2.2
-# Add scheduled job example
-description = ""
+version = "0.4.0" # extract app into separate package - calmapp
+description = "Calmmage Telegram bot library for better aiogram deployment"
 authors = ["Petr Lavrov <petrlavrov@calmmage.com>"]
 readme = "README.md"
 
@@ -11,6 +9,7 @@ readme = "README.md"
 python = ">=3.10,<4.0"
 # for stability, use frozen-app-name branch
 calmlib = { git = "https://github.com/calmmage/calmlib.git", branch = "main" }
+calmapp = { git = "https://github.com/calmmage/calmapp.git", branch = "main" }
 #calmmage = { git = "https://github.com/calmmage/calmmage.git", branch = "main" }
 pytest = ">=8.0.0"
 pytest-mongodb = ">=2.4.0"

@@ -1,16 +1,14 @@
 from aiogram import Dispatcher
+from aiogram.types import Message
+from calmapp import App, Plugin
 from dotenv import load_dotenv
 
 from bot_lib import (
-    Plugin,
-    App,
     Handler,
     HandlerDisplayMode,
     BotConfig,
     setup_dispatcher,
 )
-from aiogram.types import Message
-
 from bot_lib.demo import create_bot, run_bot
 
 

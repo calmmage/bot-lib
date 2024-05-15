@@ -1,11 +1,12 @@
 from aiogram import types, Router, Bot
 from aiogram.filters import Command
+from calmapp import App
 
 # todo: use calmlib logger
 from loguru import logger
-from bot_lib.core.app import App
-from bot_lib.handlers.handler import HandlerDisplayMode
+
 from bot_lib.handlers.basic_handler import BasicHandler
+from bot_lib.handlers.handler import HandlerDisplayMode
 
 
 class BotConfig:

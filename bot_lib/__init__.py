@@ -1,8 +1,7 @@
-from .core import App, BotConfig, setup_dispatcher
-from .handlers import Handler, HandlerDisplayMode
-from .plugins import Plugin
-
 from importlib.metadata import PackageNotFoundError
+
+from .core import BotConfig, setup_dispatcher
+from .handlers import Handler, HandlerDisplayMode
 
 try:
     import importlib.metadata
