@@ -87,6 +87,8 @@ class BotConfig:
                 alias = f"help_{handler.name}"
                 commands.append((alias, handler.nested_help_handler))
 
+            handler.register_extra_handlers(router)
+
             if handler.has_chat_handler:
                 router.message.register(handler.chat_handler)
 

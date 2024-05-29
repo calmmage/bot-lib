@@ -38,7 +38,6 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
     name: str = None
     display_mode: HandlerDisplayMode = HandlerDisplayMode.HELP_COMMAND
     commands: Dict[str, List[str]] = {}  # dict handler_func_name -> command aliases
-    plugins_required: List[str] = None
 
     # todo: build this automatically from app?
     get_commands = []  # list of tuples (app_func_name, handler_func_name)
@@ -51,6 +50,10 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
 
     # abstract method chat_handler - to be implemented by child classes
     has_chat_handler = False
+
+    def register_extra_handlers(self, router):
+        # router.message.register(content_types=["location"])(self.handle_location)
+        pass
 
     # todo: rework into property / detect automatically
     async def chat_handler(self, message: Message, app: App):
