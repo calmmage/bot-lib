@@ -410,23 +410,35 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
     # endregion
 
     # region utils - move to the base class
-    async def reply_safe(self, response_text: str, message: Message):
+    async def reply_safe(self, message: Message, response_text: str):
         """
         Respond to a message with a given text
         If the response text is too long, split it into multiple messages
         """
-        chat_id = message.chat.id
-        await self.send_safe(response_text, chat_id)
-
-    async def answer_safe(self, response_text: str, message: Message):
+        if isinstance(message, str):
+            message, response_text = response_text, message
         """
-        Answer to a message with a given text
+        Respond to a message with a given text
         If the response text is too long, split it into multiple messages
         """
         chat_id = message.chat.id
         await self.send_safe(
             response_text, chat_id, reply_to_message_id=message.message_id
         )
+
+    async def answer_safe(self, message: Message, response_text: str):
+        """
+        Respond to a message with a given text
+        If the response text is too long, split it into multiple messages
+        """
+        if isinstance(message, str):
+            message, response_text = response_text, message
+        """
+        Answer to a message with a given text
+        If the response text is too long, split it into multiple messages
+        """
+        chat_id = message.chat.id
+        await self.send_safe(response_text, chat_id)
 
     async def func_handler(self, func, message, async_func=False):
         """
