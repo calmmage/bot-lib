@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import sys
+from aiogram.client.default import DefaultBotProperties
 from textwrap import dedent
 
 from aiogram import Bot
@@ -23,7 +24,10 @@ def create_bot(token=None):
         load_dotenv()
         # Bot token can be obtained via https://t.me/BotFather
         token = os.getenv("TELEGRAM_BOT_TOKEN")
-    bot = Bot(token, parse_mode=ParseMode.HTML)
+    bot = Bot(
+        token,  # parse_mode=ParseMode.HTML
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+    )
     return bot
 
 
