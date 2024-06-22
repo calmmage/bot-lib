@@ -130,16 +130,3 @@ class BotConfig:
 @deprecated("Use BotConfig.setup_dispatcher instead")
 def setup_dispatcher(dispatcher, bot_config: BotConfig, extra_handlers=None):
     bot_config.setup_dispatcher(dispatcher, extra_handlers)
-
-
-def setup_bot(bot, bot_config: BotConfig, extra_handlers=None):
-
-    # todo: set bot commands
-
-    # async def _set_aiogram_bot_commands(self):
-    #     bot_commands = [
-    #         types.BotCommand(command=c, description=d or self.NO_COMMAND_DESCRIPTION)
-    #         for c, d in self.commands
-    #     ]
-    #     await self._aiogram_bot.set_my_commands(bot_commands)
-    pass

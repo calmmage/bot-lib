@@ -3,12 +3,17 @@ Use both bot-lib and raw aiogram methods to create a bot
 use demo utils to focus on bot-lib and hide the aiogram methods a little bit
 
 """
+
 from aiogram import Dispatcher, types
+
 # from aiogram.filters import Command
 from dotenv import load_dotenv
 
-from bot_lib.demo import create_bot, configure_commands_and_dispatcher, run_bot, \
-    setup_dispatcher_with_demo_handler
+from bot_lib.demo import (
+    configure_commands_and_dispatcher,
+    setup_dispatcher_with_demo_handler,
+)
+from bot_lib.utils import create_bot, run_bot
 
 load_dotenv()
 
@@ -50,5 +55,5 @@ def setup_and_run_bot():
     run_bot(dp, bot)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     setup_and_run_bot()

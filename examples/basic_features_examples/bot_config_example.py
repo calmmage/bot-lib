@@ -4,7 +4,7 @@ from calmapp import App
 from dotenv import load_dotenv
 
 from bot_lib import Handler, HandlerDisplayMode, BotConfig, setup_dispatcher
-from bot_lib.demo import create_bot, run_bot
+from bot_lib.utils import create_bot, run_bot
 
 
 class MyApp(App):

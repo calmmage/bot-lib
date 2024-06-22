@@ -5,10 +5,12 @@ Only use bot-lib to create a bot
 from aiogram import Dispatcher
 from dotenv import load_dotenv
 
-from bot_lib.demo import create_bot, run_bot, setup_dispatcher_with_demo_handler
+from bot_lib.demo import setup_dispatcher_with_demo_handler
+from bot_lib.utils import create_bot, run_bot
 
 # from bot_lib import create_bot
 load_dotenv()
+
 
 def setup_and_run_bot():
     dp = Dispatcher()
@@ -23,6 +25,5 @@ def setup_and_run_bot():
     run_bot(dp, bot)
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     setup_and_run_bot()

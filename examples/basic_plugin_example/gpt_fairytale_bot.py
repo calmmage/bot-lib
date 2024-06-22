@@ -7,7 +7,7 @@ from bot_lib import (
     App,
 )
 from bot_lib.demo import FairytaleHandler
-from bot_lib.demo import create_bot, run_bot
+from bot_lib.utils import create_bot, run_bot
 from bot_lib.plugins import GptPlugin
 
 load_dotenv()
