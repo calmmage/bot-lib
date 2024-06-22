@@ -66,6 +66,8 @@ class BotConfig:
             # todo: add other display modes processing
             for command, aliases in handler.commands.items():
                 # register commands
+                if isinstance(aliases, str):
+                    aliases = [aliases]
                 router.message.register(
                     getattr(handler, command), Command(commands=aliases)
                 )
@@ -73,8 +75,6 @@ class BotConfig:
                 # todo: use calmlib util - 'compare enums' - find wind find_ and add to calmlib
                 if handler.display_mode == HandlerDisplayMode.FULL:
                     # commands descriptions
-                    if isinstance(aliases, str):
-                        aliases = [aliases]
                     for alias in aliases:
                         commands.append((alias, getattr(handler, command).__doc__))
                 elif handler.display_mode == HandlerDisplayMode.HELP_MESSAGE:
@@ -84,8 +84,14 @@ class BotConfig:
                     self.app.hidden_commands[handler.name].extend(aliases)
 
             if handler.display_mode == HandlerDisplayMode.HELP_COMMAND:
-                alias = f"help_{handler.name}"
-                commands.append((alias, handler.nested_help_handler))
+                name = handler.name or handler.__class__.__name__
+                alias = f"help_{name.lower()}"
+                router.message.register(
+                    handler.nested_help_handler, Command(commands=[alias])
+                )
+                commands.append(
+                    (alias, "Show help for {name} - list all available commands")
+                )
 
             handler.register_extra_handlers(router)
 

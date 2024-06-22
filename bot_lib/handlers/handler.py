@@ -211,17 +211,20 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         return await self._extract_message_text(message, include_reply=True)
 
     def _get_short_description(self, name):
-        desc = getattr(self, name).__doc__.strip()
-        if not desc:
-            return ""
+        desc = getattr(self, name).__doc__
+        if desc is None or desc.strip() == "":
+            return "No description provided"
         return desc.splitlines()[0]
 
     async def nested_help_handler(self, message: Message):
         # return list of commands
         help_message = "Available commands:\n"
         for command, aliases in self.commands.items():
-            help_message += f"/{command}\n"
-            help_message += f"  {self._get_short_description(command)}\n"
+            if isinstance(aliases, str):
+                aliases = [aliases]
+            for alias in aliases:
+                help_message += f"/{alias}\n"
+                help_message += f"  {self._get_short_description(command)}\n"
         await message.reply(help_message)
 
     # region text -> command args - Command Input Magic Parsing
