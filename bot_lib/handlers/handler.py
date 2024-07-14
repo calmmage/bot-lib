@@ -2,15 +2,15 @@ import enum
 import re
 import textwrap
 import traceback
-from aiogram import Bot
-from aiogram.types import Message
-from calmlib.utils import get_logger
 from datetime import datetime
-from deprecated import deprecated
 from typing import List, Dict, Union
 
+from aiogram import Bot, Router
+from aiogram.types import Message
 # from bot_lib.core.app import App
 from calmapp import App
+from calmlib.utils import get_logger
+from deprecated import deprecated
 
 from bot_lib.migration_bot_base.core import TelegramBotConfig
 from bot_lib.migration_bot_base.core.telegram_bot import TelegramBot as OldTelegramBot
@@ -45,6 +45,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
 
     def __init__(self, config: TelegramBotConfig = None):
         self.bot = None
+        self._router = None
         self._build_commands_and_add_to_list()
         super().__init__(config=config)
 
@@ -462,3 +463,17 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         await self.answer_safe(response_text, message)
 
     # endregion
+
+    # region new features (unsorted)
+    def get_router(self):
+        if self._router is None:
+            self._router = self._create_router()
+        return self._router
+
+    def _create_router(self):
+        return Router(name=self.name)
+
+    def setup_router(self, router: Router):  # dummy method
+        return router
+
+    # endregion new features (unsorted)

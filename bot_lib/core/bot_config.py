@@ -1,10 +1,9 @@
 from typing import Callable, Awaitable, Dict, Any
 
-from aiogram import types, Router, Bot
+from aiogram import types, Bot
 from aiogram.filters import Command
 from aiogram.types import Update
 from calmapp import App
-
 # todo: use calmlib logger
 from loguru import logger
 from typing_extensions import deprecated
@@ -55,13 +54,13 @@ class BotConfig:
 
     # todo: split this even more
     def _register_handlers(self, dispatcher, handlers):
-
         # step 1 - build commands list
         commands = []
         for handler in handlers:
             dispatcher.startup.register(handler.on_startup)
 
-            router = Router(name=handler.name)
+            router = handler.get_router()
+            router = handler.setup_router(router)
 
             # todo: add other display modes processing
             for command, aliases in handler.commands.items():
