@@ -4,7 +4,6 @@ from aiogram import types, Bot
 from aiogram.filters import Command
 from aiogram.types import Update
 from calmapp import App
-# todo: use calmlib logger
 from loguru import logger
 from typing_extensions import deprecated
 
