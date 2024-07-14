@@ -3,11 +3,10 @@ import re
 import textwrap
 import traceback
 from datetime import datetime
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Optional
 
 from aiogram import Bot, Router
 from aiogram.types import Message
-# from bot_lib.core.app import App
 from calmapp import App
 from calmlib.utils import get_logger
 from deprecated import deprecated
@@ -296,16 +295,53 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
 
     PREVIEW_CUTOFF = 500
 
+    @staticmethod
+    def _check_is_message(item):
+        return isinstance(item, Message)
+
+    @staticmethod
+    def _check_is_chat_id(item):
+        return isinstance(item, int) or (
+            isinstance(item, str) and item and item[1:].isdigit()
+        )
+
+    @staticmethod
+    def _check_is_text(item):
+        return isinstance(item, str)
+
     async def send_safe(
         self,
-        text: str,
         chat_id: int,
-        reply_to_message_id=None,
+        text: str,
+        reply_to_message_id: Optional[int] = None,
         filename=None,
         escape_markdown=False,
         wrap=True,
         parse_mode=None,
     ):
+        # backward compat: check if chat_id and text are swapped
+        if self._check_is_chat_id(text) and self._check_is_text(chat_id):
+            # warning
+            self.logger.warning(
+                "chat_id and text are swapped. "
+                "Please use send_safe(text, chat_id) instead. "
+                "Old usage is deprecated and will be removed in next version"
+            )
+            chat_id, text = text, chat_id
+
+        if self._check_is_message(chat_id):
+            self.logger.warning(
+                "message instance is passed instead of chat_id "
+                "Please use send_safe(text, chat_id, reply_to_message_id=) instead. "
+                "Old usage is deprecated and will be removed in next version"
+            )
+            # noinspection PyTypeChecker
+            message: Message = chat_id
+            chat_id = message.chat.id
+            reply_to_message_id = message.message_id
+        if isinstance(chat_id, str):
+            chat_id = int(chat_id)
+
         if wrap:
             lines = text.split("\n")
             new_lines = [textwrap.fill(line, width=88) for line in lines]
@@ -427,7 +463,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         """
         chat_id = message.chat.id
         await self.send_safe(
-            response_text, chat_id, reply_to_message_id=message.message_id
+            chat_id, response_text, reply_to_message_id=message.message_id
         )
 
     async def answer_safe(self, message: Message, response_text: str):
@@ -442,7 +478,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         If the response text is too long, split it into multiple messages
         """
         chat_id = message.chat.id
-        await self.send_safe(response_text, chat_id)
+        await self.send_safe(chat_id, response_text)
 
     async def func_handler(self, func, message, async_func=False):
         """
@@ -460,7 +496,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
             response_text = await func(**result)
         else:
             response_text = func(**result)
-        await self.answer_safe(response_text, message)
+        await self.answer_safe(message, response_text)
 
     # endregion
 
