@@ -6,6 +6,9 @@ from aiogram.utils.markdown import hbold
 from calmapp import App
 
 from bot_lib.handlers import Handler, BasicHandler, HandlerDisplayMode
+from bot_lib.utils import setup_bot, create_bot
+
+__ = create_bot, setup_bot
 
 
 def configure_commands_and_dispatcher(dp):
