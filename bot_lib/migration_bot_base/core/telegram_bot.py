@@ -26,7 +26,6 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 
 from bot_lib.migration_bot_base.core import TelegramBotConfig
-from bot_lib.migration_bot_base.utils import tools_dir
 
 if TYPE_CHECKING:
     from bot_lib.migration_bot_base.core import App
@@ -170,57 +169,6 @@ class TelegramBotBase(ABC):
     #     async with self.pyrogram_client as app:
     #         message = await app.get_messages(chat_id, message_ids=message_id)
     #         return await message.download(in_memory=True)
-
-    def _check_pyrogram_tokens(self):
-        if not (
-            self.config.api_id.get_secret_value()
-            and self.config.api_hash.get_secret_value()
-        ):
-            raise ValueError(
-                "Telegram api_id and api_hash must be provided for Pyrogram "
-                "to download large files"
-            )
-
-    async def download_large_file(self, chat_id, message_id, target_path=None):
-        # todo: troubleshoot chat_id. Only username works for now.
-        self._check_pyrogram_tokens()
-
-        script_path = tools_dir / "download_file_with_pyrogram.py"
-
-        # Construct command to run the download script
-        cmd = [
-            "python",
-            str(script_path),
-            "--chat-id",
-            str(chat_id),
-            "--message-id",
-            str(message_id),
-            "--token",
-            self.config.token.get_secret_value(),
-            "--api-id",
-            self.config.api_id.get_secret_value(),
-            "--api-hash",
-            self.config.api_hash.get_secret_value(),
-        ]
-
-        if target_path:
-            cmd.extend(["--target-path", target_path])
-        else:
-            _, file_path = mkstemp(dir=self.downloads_dir)
-            cmd.extend(["--target-path", file_path])
-        self.logger.debug(f"Running command: {' '.join(cmd)}")
-        # Run the command in a separate thread and await its result
-        result = await asyncio.to_thread(subprocess.run, cmd, capture_output=True)
-        err = result.stderr.strip().decode("utf-8")
-        if "ERROR" in err:
-            raise Exception(err)
-        file_path = result.stdout.strip().decode("utf-8")
-        self.logger.debug(f"{result.stdout=}\n\n{result.stderr=}")
-        if target_path is None:
-            file_data = BytesIO(open(file_path, "rb").read())
-            os.unlink(file_path)
-            return file_data
-        return file_path
 
 
 command_registry: List[CommandRegistryItem] = []
@@ -453,17 +401,10 @@ class TelegramBot(TelegramBotBase):
             raise ValueError("No audio file detected")
 
         file = await self.download_file(message, file_desc)
+        if self.app is None:
+            self.logger.warning("App not set, skipping audio processing")
+            return None
         return await self.app.parse_audio(file, parallel=parallel)
-
-    async def download_file(self, message: types.Message, file_desc, file_path=None):
-        if file_desc.file_size < 20 * 1024 * 1024:
-            return await self._aiogram_bot.download(
-                file_desc.file_id, destination=file_path
-            )
-        else:
-            return await self.download_large_file(
-                message.chat.username, message.message_id, target_path=file_path
-            )
 
     @mark_command(commands=["multistart"], description="Start multi-message mode")
     async def multi_message_start(self, message: types.Message):

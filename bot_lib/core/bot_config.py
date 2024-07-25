@@ -59,7 +59,7 @@ class BotConfig:
             dispatcher.startup.register(handler.on_startup)
 
             router = handler.get_router()
-            router = handler.setup_router(router)
+            handler.setup_router(router)
 
             # todo: add other display modes processing
             for command, aliases in handler.commands.items():

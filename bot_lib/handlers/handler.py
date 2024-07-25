@@ -1,9 +1,16 @@
+import asyncio
 import enum
+import os
 import re
+import subprocess
 import textwrap
 import traceback
 from datetime import datetime
-from typing import List, Dict, Union, Optional
+from io import BytesIO
+from tempfile import mkstemp
+from typing import Dict
+from typing import List
+from typing import Union, Optional
 
 from aiogram import Bot, Router
 from aiogram.types import Message
@@ -18,6 +25,7 @@ from bot_lib.migration_bot_base.utils.text_utils import (
     split_long_message,
     escape_md,
 )
+from bot_lib.utils import tools_dir
 
 logger = get_logger(__name__)
 
@@ -172,13 +180,13 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         if message.voice or message.audio:
             # todo: accept voice message? Seems to work
             chunks = await self._process_voice_message(message)
-            result["audio"] += "\n\n".join(chunks)
+            result["audio"] = "\n\n".join(chunks)
         # todo: accept files?
         if message.document and message.document.mime_type == "text/plain":
             self.logger.info(f"Received text file: {message.document.file_name}")
             file = await self._aiogram_bot.download(message.document.file_id)
             content = file.read().decode("utf-8")
-            result["document"] += f"\n\n{content}"
+            result["document"] = f"\n\n{content}"
         # todo: accept video messages?
         # if message.document:
 
@@ -318,6 +326,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         escape_markdown=False,
         wrap=True,
         parse_mode=None,
+        **kwargs,  # todo: add everywhere below to send
     ):
         # backward compat: check if chat_id and text are swapped
         if self._check_is_chat_id(text) and self._check_is_text(chat_id):
@@ -365,6 +374,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
                         )
                         + preview
                         + "...",
+                        **kwargs,
                     )
 
                 await self._send_as_file(
@@ -372,6 +382,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
                     text,
                     reply_to_message_id=reply_to_message_id,
                     filename=filename,
+                    **kwargs,
                 )
             else:  # len(text) < MAX_TELEGRAM_MESSAGE_LENGTH:
                 message_text = text
@@ -384,6 +395,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
                     chat_id=chat_id,
                     reply_to_message_id=reply_to_message_id,
                     parse_mode=parse_mode,
+                    **kwargs,
                 )
         else:  # not self.send_long_messages_as_files
             for chunk in split_long_message(text):
@@ -394,10 +406,11 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
                     chunk,
                     reply_to_message_id=reply_to_message_id,
                     parse_mode=parse_mode,
+                    **kwargs,
                 )
 
     async def _send_with_parse_mode_fallback(
-        self, chat_id, text, reply_to_message_id=None, parse_mode=None
+        self, chat_id, text, reply_to_message_id=None, parse_mode=None, **kwargs
     ):
         """
         Send message with parse_mode=None if parse_mode is not supported
@@ -410,6 +423,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
                 text,
                 reply_to_message_id=reply_to_message_id,
                 parse_mode=parse_mode,
+                **kwargs,
             )
         except Exception:
             self.logger.warning(
@@ -423,6 +437,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
                 text,
                 reply_to_message_id=reply_to_message_id,
                 parse_mode=None,
+                **kwargs,
             )
 
     @property
@@ -430,7 +445,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         return self.config.send_long_messages_as_files
 
     async def _send_as_file(
-        self, chat_id, text, reply_to_message_id=None, filename=None
+        self, chat_id, text, reply_to_message_id=None, filename=None, **kwargs
     ):
         """
         Send text as a file to the chat
@@ -444,13 +459,13 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
 
         temp_file = BufferedInputFile(text.encode("utf-8"), filename)
         await self.bot.send_document(
-            chat_id, temp_file, reply_to_message_id=reply_to_message_id
+            chat_id, temp_file, reply_to_message_id=reply_to_message_id, **kwargs
         )
 
     # endregion
 
     # region utils - move to the base class
-    async def reply_safe(self, message: Message, response_text: str):
+    async def reply_safe(self, message: Message, response_text: str, **kwargs):
         """
         Respond to a message with a given text
         If the response text is too long, split it into multiple messages
@@ -463,7 +478,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         """
         chat_id = message.chat.id
         await self.send_safe(
-            chat_id, response_text, reply_to_message_id=message.message_id
+            chat_id, response_text, reply_to_message_id=message.message_id, **kwargs
         )
 
     async def answer_safe(self, message: Message, response_text: str):
@@ -510,6 +525,79 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         return Router(name=self.name)
 
     def setup_router(self, router: Router):  # dummy method
-        return router
+        pass
 
     # endregion new features (unsorted)
+
+    # region file ops
+
+    async def download_file(self, message: Message, file_desc, file_path=None):
+        if file_desc.file_size < 20 * 1024 * 1024:
+            return await self.bot.download(file_desc.file_id, destination=file_path)
+        else:
+            return await self.download_large_file(
+                message.chat.username, message.message_id, target_path=file_path
+            )
+
+    def _check_pyrogram_tokens(self):
+        # todo: update, rework self.config, make it per-user
+        if not (
+            self.config.api_id.get_secret_value()
+            and self.config.api_hash.get_secret_value()
+        ):
+            raise ValueError(
+                "Telegram api_id and api_hash must be provided for Pyrogram "
+                "to download large files"
+            )
+
+    @property
+    def tools_dir(self):
+        return tools_dir
+
+    @property
+    def download_large_file_script_path(self):
+        return self.tools_dir / "download_file_with_pyrogram.py"
+
+    async def download_large_file(self, chat_id, message_id, target_path=None):
+        # todo: troubleshoot chat_id. Only username works for now.
+        self._check_pyrogram_tokens()
+
+        script_path = self.download_large_file_script_path
+
+        # todo: update, rework self.config, make it per-user
+        # Construct command to run the download script
+        cmd = [
+            "python",
+            str(script_path),
+            "--chat-id",
+            str(chat_id),
+            "--message-id",
+            str(message_id),
+            "--token",
+            self.config.token.get_secret_value(),
+            "--api-id",
+            self.config.api_id.get_secret_value(),
+            "--api-hash",
+            self.config.api_hash.get_secret_value(),
+        ]
+
+        if target_path:
+            cmd.extend(["--target-path", target_path])
+        else:
+            _, file_path = mkstemp(dir=self.downloads_dir)
+            cmd.extend(["--target-path", file_path])
+        self.logger.debug(f"Running command: {' '.join(cmd)}")
+        # Run the command in a separate thread and await its result
+        result = await asyncio.to_thread(subprocess.run, cmd, capture_output=True)
+        err = result.stderr.strip().decode("utf-8")
+        if "ERROR" in err:
+            raise Exception(err)
+        file_path = result.stdout.strip().decode("utf-8")
+        self.logger.debug(f"{result.stdout=}\n\n{result.stderr=}")
+        if target_path is None:
+            file_data = BytesIO(open(file_path, "rb").read())
+            os.unlink(file_path)
+            return file_data
+        return file_path
+
+    # endregion file ops
