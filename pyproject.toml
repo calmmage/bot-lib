@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bot-lib"
-version = "0.5.9" # bugfix
+version = "0.5.10" # update pyproject.toml
 description = "Calmmage Telegram bot library for better aiogram deployment"
 authors = ["Petr Lavrov <petrlavrov@calmmage.com>"]
 readme = "README.md"
@@ -26,10 +26,10 @@ mongoengine = ">=0.28.0"
 pydub = ">=0.25.1"
 tiktoken = "*"
 pyrogram = ">=2.0.106"
-# tgcrypto = ">=1.2.5"
 aiolimiter = ">=1.1.0"
 gpt-kit = { git = "https://github.com/calmmage/gpt-kit.git", branch = "gpt-engine" }
 apscheduler = "*"
+tgcrypto = ">=1.2.5"
 
 [tool.poetry.group.dev.dependencies]
 
