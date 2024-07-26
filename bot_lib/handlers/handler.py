@@ -8,17 +8,49 @@ import traceback
 from datetime import datetime
 from io import BytesIO
 from tempfile import mkstemp
-from typing import Dict
+from typing import Dict, Optional
 from typing import List
 from typing import Union, Optional
-
+from pathlib import Path
 from aiogram import Bot, Router
+from aiogram.enums import ParseMode
 from aiogram.types import Message
 from calmapp import App
 from calmlib.utils import get_logger
 from deprecated import deprecated
+from pydantic import SecretStr
+from pydantic_settings import BaseSettings
+import asyncio
+import json
+import os
+import pprint
+import random
+import subprocess
+import traceback
+from abc import ABC, abstractmethod
+from collections import defaultdict, deque
+from datetime import datetime
+from functools import wraps
+from io import BytesIO
+from pathlib import Path
+from tempfile import mkstemp
+from textwrap import dedent
+from typing import TYPE_CHECKING, Union, Optional
+from typing import Type, List
 
-from bot_lib.migration_bot_base.core import TelegramBotConfig
+import loguru
+import pyrogram
+from aiogram import F
+from aiogram import types
+from aiogram.enums import ParseMode
+from aiogram.filters import Command
+from dotenv import load_dotenv
+from pydantic import BaseModel
+
+
+if TYPE_CHECKING:
+    from bot_lib.migration_bot_base.core import App
+
 from bot_lib.migration_bot_base.core.telegram_bot import TelegramBot as OldTelegramBot
 from bot_lib.migration_bot_base.utils.text_utils import (
     MAX_TELEGRAM_MESSAGE_LENGTH,
@@ -40,21 +72,52 @@ class HandlerDisplayMode(enum.Enum):
     HIDDEN = "hidden"  # hidden from help command
 
 
+class HandlerConfig(BaseSettings):
+    token: SecretStr = SecretStr("")
+    api_id: SecretStr = SecretStr("")
+    api_hash: SecretStr = SecretStr("")
+
+    send_long_messages_as_files: bool = True
+    test_mode: bool = False
+    allowed_users: list = []
+    dev_message_timeout: int = 5 * 60  # dev message cleanup after 5 minutes
+
+    parse_mode: Optional[ParseMode] = None
+    send_preview_for_long_messages: bool = False
+
+    model_config = {
+        "env_prefix": "TELEGRAM_BOT_",
+    }
+
+
 # abstract
 class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTelegramBot
     name: str = None
     display_mode: HandlerDisplayMode = HandlerDisplayMode.HELP_COMMAND
     commands: Dict[str, List[str]] = {}  # dict handler_func_name -> command aliases
 
+    _config_class: Type[HandlerConfig] = HandlerConfig
+
     # todo: build this automatically from app?
     get_commands = []  # list of tuples (app_func_name, handler_func_name)
     set_commands = []  # list of tuples (app_func_name, handler_func_name)
 
-    def __init__(self, config: TelegramBotConfig = None):
+    def _load_config(self, **kwargs):
+        load_dotenv()
+        return self._config_class(**kwargs)
+
+    def __init__(self, config: _config_class = None, app_data="./app_data"):
+        if config is None:
+            config = self._load_config()
+        self.config = config
+        self._app_data = Path(app_data)
+        super().__init__()
         self.bot = None
         self._router = None
         self._build_commands_and_add_to_list()
-        super().__init__(config=config)
+
+        # Pyrogram
+        self.pyrogram_client = self._init_pyrogram_client()
 
     # abstract method chat_handler - to be implemented by child classes
     has_chat_handler = False
@@ -377,7 +440,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
                         **kwargs,
                     )
 
-                await self._send_as_file(
+                return await self._send_as_file(
                     chat_id,
                     text,
                     reply_to_message_id=reply_to_message_id,
@@ -390,7 +453,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
                     message_text = escape_md(text)
                 if filename:
                     message_text = escape_md(filename) + "\n" + message_text
-                await self._send_with_parse_mode_fallback(
+                return await self._send_with_parse_mode_fallback(
                     text=message_text,
                     chat_id=chat_id,
                     reply_to_message_id=reply_to_message_id,
@@ -401,7 +464,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
             for chunk in split_long_message(text):
                 if escape_markdown:
                     chunk = escape_md(chunk)
-                await self._send_with_parse_mode_fallback(
+                return await self._send_with_parse_mode_fallback(
                     chat_id,
                     chunk,
                     reply_to_message_id=reply_to_message_id,
@@ -418,7 +481,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         if parse_mode is None:
             parse_mode = self.config.parse_mode
         try:
-            await self.bot.send_message(
+            return await self.bot.send_message(
                 chat_id,
                 text,
                 reply_to_message_id=reply_to_message_id,
@@ -432,7 +495,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
                 f"Exception: {traceback.format_exc()}"
                 # todo , data=traceback.format_exc()
             )
-            await self.bot.send_message(
+            return await self.bot.send_message(
                 chat_id,
                 text,
                 reply_to_message_id=reply_to_message_id,
@@ -477,11 +540,11 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         If the response text is too long, split it into multiple messages
         """
         chat_id = message.chat.id
-        await self.send_safe(
+        return await self.send_safe(
             chat_id, response_text, reply_to_message_id=message.message_id, **kwargs
         )
 
-    async def answer_safe(self, message: Message, response_text: str):
+    async def answer_safe(self, message: Message, response_text: str, **kwargs):
         """
         Respond to a message with a given text
         If the response text is too long, split it into multiple messages
@@ -493,7 +556,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         If the response text is too long, split it into multiple messages
         """
         chat_id = message.chat.id
-        await self.send_safe(chat_id, response_text)
+        return await self.send_safe(chat_id, response_text, **kwargs)
 
     async def func_handler(self, func, message, async_func=False):
         """
@@ -521,8 +584,10 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
             self._router = self._create_router()
         return self._router
 
-    def _create_router(self):
-        return Router(name=self.name)
+    def _create_router(self, name=None, **kwargs):
+        if name is None:
+            name = self.name
+        return Router(name=name)
 
     def setup_router(self, router: Router):  # dummy method
         pass
@@ -549,6 +614,14 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
                 "Telegram api_id and api_hash must be provided for Pyrogram "
                 "to download large files"
             )
+
+    def _init_pyrogram_client(self):
+        return pyrogram.Client(
+            self.__class__.__name__,
+            api_id=self.config.api_id.get_secret_value(),
+            api_hash=self.config.api_hash.get_secret_value(),
+            bot_token=self.config.token.get_secret_value(),
+        )
 
     @property
     def tools_dir(self):
@@ -599,5 +672,17 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
             os.unlink(file_path)
             return file_data
         return file_path
+
+    @property
+    def app_data(self):
+        if not self._app_data.exists():
+            self._app_data.mkdir(parents=True, exist_ok=True)
+        return self._app_data
+
+    @property
+    def downloads_dir(self):
+        if not self.app_data.exists():
+            self.app_data.mkdir(parents=True, exist_ok=True)
+        return self.app_data / "downloads"
 
     # endregion file ops

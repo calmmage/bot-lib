@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bot-lib"
-version = "0.5.10" # update pyproject.toml
+version = "0.6.0" # major reowrk, migrate large parts of old bot around, rework stuff
 description = "Calmmage Telegram bot library for better aiogram deployment"
 authors = ["Petr Lavrov <petrlavrov@calmmage.com>"]
 readme = "README.md"
@@ -16,7 +16,7 @@ pytest-mongodb = ">=2.4.0"
 # logging
 loguru = ">=0.7.2"
 toml = "*"
-openai = ">=1.0.0"
+openai = ">=1.37.1"
 
 aiogram = ">=3.4"
 

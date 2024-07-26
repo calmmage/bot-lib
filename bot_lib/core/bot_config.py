@@ -66,6 +66,7 @@ class BotConfig:
                 # register commands
                 if isinstance(aliases, str):
                     aliases = [aliases]
+                aliases = [alias.lstrip("/") for alias in aliases]
                 router.message.register(
                     getattr(handler, command), Command(commands=aliases)
                 )

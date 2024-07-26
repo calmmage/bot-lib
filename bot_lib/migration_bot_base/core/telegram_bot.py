@@ -1,31 +1,21 @@
 import asyncio
 import json
-import os
-import pprint
 import random
-import subprocess
-import traceback
 from abc import ABC, abstractmethod
 from collections import defaultdict, deque
 from datetime import datetime
 from functools import wraps
-from io import BytesIO
 from pathlib import Path
-from tempfile import mkstemp
 from textwrap import dedent
+from typing import List
 from typing import TYPE_CHECKING, Union, Optional
-from typing import Type, List
 
 import loguru
-import pyrogram
 from aiogram import F
 from aiogram import types
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
-from dotenv import load_dotenv
 from pydantic import BaseModel
-
-from bot_lib.migration_bot_base.core import TelegramBotConfig
 
 if TYPE_CHECKING:
     from bot_lib.migration_bot_base.core import App
@@ -56,61 +46,26 @@ def admin(func):
 #  message and passes the parsed data to the handler, then sends the result
 #  back to the user
 class TelegramBotBase(ABC):
-    _config_class: Type[TelegramBotConfig] = TelegramBotConfig
-
     system_parse_mode = ParseMode.MARKDOWN_V2
 
-    def __init__(self, config: _config_class = None, app_data="./app_data"):
-        self._app_data = Path(app_data)
-
-        if config is None:
-            config = self._load_config()
-        self.config = config
-
+    def __init__(self):
         self.start_time = datetime.now()
 
         self.logger = loguru.logger.bind(component=self.__class__.__name__)
         # token = config.token.get_secret_value()
 
-        # Pyrogram
-        self.pyrogram_client = self._init_pyrogram_client()
-
-        if config.parse_mode is not None:
-            # Warn about broken features if parse_mode is not None
-            self.logger.warning(
-                "Custom default parse_mode is WIP "
-                "and some features may not work as expected"
-            )
+        # if config.parse_mode is not None:
+        #     # Warn about broken features if parse_mode is not None
+        #     self.logger.warning(
+        #         "Custom default parse_mode is WIP "
+        #         "and some features may not work as expected"
+        #     )
         # aiogram
         # self._aiogram_bot: aiogram.Bot = aiogram.Bot(
         #     token=token  # , parse_mode=self.config.parse_mode  # plain text
         # )
         # self._dp: aiogram.Dispatcher = aiogram.Dispatcher(bot=self._aiogram_bot)
         # self._me = None
-
-    @property
-    def app_data(self):
-        if not self._app_data.exists():
-            self._app_data.mkdir(parents=True, exist_ok=True)
-        return self._app_data
-
-    @property
-    def downloads_dir(self):
-        if not self.app_data.exists():
-            self.app_data.mkdir(parents=True, exist_ok=True)
-        return self.app_data / "downloads"
-
-    def _init_pyrogram_client(self):
-        return pyrogram.Client(
-            self.__class__.__name__,
-            api_id=self.config.api_id.get_secret_value(),
-            api_hash=self.config.api_hash.get_secret_value(),
-            bot_token=self.config.token.get_secret_value(),
-        )
-
-    def _load_config(self, **kwargs):
-        load_dotenv()
-        return self._config_class(**kwargs)
 
     def register_command(self, handler, commands=None, description=None, filters=None):
         if filters is None:
@@ -205,8 +160,8 @@ def mark_command(
 class TelegramBot(TelegramBotBase):
     _commands = []
 
-    def __init__(self, config: TelegramBotConfig = None, app: "App" = None):
-        super().__init__(config)
+    def __init__(self, app: "App" = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.app = app
 
         # todo: rework to multi-chat state
@@ -216,23 +171,23 @@ class TelegramBot(TelegramBotBase):
 
     # no decorator to control init order and user access
     # @mark_command(commands=["start"], description="Start command")
-    async def start(self, message: types.Message):
-        response = dedent(
-            f"""
-            Hi\! I'm the {self.__class__.__name__}\.
-            I'm based on the [bot\-base](https://github.com/calmmage/bot\-base) library\.
-            I support the following features:
-            \- voice messages parsing
-            \- hashtag and attribute recognition \(\#ignore, ignore\=True\)
-            \- multi\-message mode
-            Use /help for more details
-            """
-        )
-        await self.send_safe(
-            text=response,
-            chat_id=message.chat.id,
-            parse_mode=self.system_parse_mode,
-        )
+    # async def start(self, message: types.Message):
+    #     response = dedent(
+    #         f"""
+    #         Hi\! I'm the {self.__class__.__name__}\.
+    #         I'm based on the [bot\-base](https://github.com/calmmage/bot\-base) library\.
+    #         I support the following features:
+    #         \- voice messages parsing
+    #         \- hashtag and attribute recognition \(\#ignore, ignore\=True\)
+    #         \- multi\-message mode
+    #         Use /help for more details
+    #         """
+    #     )
+    #     await self.send_safe(
+    #         text=response,
+    #         chat_id=message.chat.id,
+    #         parse_mode=self.system_parse_mode,
+    #     )
 
     # @mark_command(["help"], description="Show this help message")
     async def help(self, message: types.Message):
@@ -279,21 +234,6 @@ class TelegramBot(TelegramBotBase):
     def has_command(self, command):
         return any([command in c[0] for c in self.commands])
 
-    async def unauthorized(self, message: types.Message):
-        self.logger.info(f"Unauthorized user {message.from_user.username}")
-        # todo 1: once a day respond to a particular user - in
-        # if direct @ mention or /command that in self.has_command - always respond.
-        if (
-            message.chat.type == "private"
-            or await self.check_message_mentions_bot(message)
-            or await self.check_message_uses_bot_command(message)
-        ):
-            await message.answer(
-                self.UNAUTHORISED_RESPONSE, parse_mode=self.system_parse_mode
-            )
-        else:
-            pass
-
     async def chat_message_handler(self, message: types.Message):
         """
         Placeholder implementation of main chat message handler
@@ -318,73 +258,6 @@ class TelegramBot(TelegramBotBase):
             )
 
         return message_text
-
-    async def error_handler(self, event: types.ErrorEvent, message: types.Message):
-        # Get chat ID from the message.
-        # This will vary depending on the library/framework you're using.
-        chat_id = message.chat.id
-        error_data = {
-            "timestamp": datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
-            "error": str(event.exception),
-            "traceback": traceback.format_exc(),
-        }
-        self.errors[chat_id].append(error_data)
-
-        # Respond to the user
-        await message.answer(
-            "Oops, something went wrong! Use /error or /explainerror command if you "
-            "want details"
-        )
-
-    @mark_command("error", description="Get recent error text")
-    async def error_command_handler(self, message: types.Message):
-        chat_id = message.chat.id
-        errors = self.errors[chat_id]
-        if errors:
-            error = errors[-1]
-            error_message = pprint.pformat(error)
-            filename = f"error_message_{error['timestamp']}.txt"
-        else:
-            error_message = "No recent error message captured"
-            filename = ""
-        await self.send_safe(
-            text=error_message,
-            chat_id=chat_id,
-            reply_to_message_id=message.message_id,
-            filename=filename,
-            wrap=False,
-        )
-
-    # todo: add init check if gpt_engine is enabled
-    # todo: add option to set up gpt engine at runtime (per user)
-    # explain error
-    @mark_command("explainError", description="Explain error")
-    async def explain_error_command_handler(self, message: types.Message):
-        """
-        Explain latest error with gpt
-        """
-        chat_id = message.chat.id
-        errors = self.errors[chat_id]
-        if errors:
-            error = errors[-1]
-            error_message = error["error"]
-            filename = f"error_message_{error['timestamp']}.txt"
-            gpt_answer = await self.app.gpt_engine.arun(
-                prompt=error_message,
-                user=message.from_user.username,
-                system="Explain this error",
-            )
-            reply_message = f"GPT Explanation:\n{gpt_answer}"
-        else:
-            reply_message = "No recent error message captured"
-            filename = ""
-        await self.send_safe(
-            text=reply_message,
-            chat_id=chat_id,
-            reply_to_message_id=message.message_id,
-            filename=filename,
-            wrap=False,
-        )
 
     # ------------------------------------------------------------
 
