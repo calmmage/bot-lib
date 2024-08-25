@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from bot_lib import (
     Handler,
     HandlerDisplayMode,
-    BotConfig,
+    BotManager,
     setup_dispatcher,
 )
 from bot_lib.utils import create_bot, run_bot
@@ -35,7 +35,7 @@ class MyHandler(Handler):
         await message.answer(app.my_plugin.secret_message)
 
 
-bot_config = BotConfig(app=MyApp(plugins=[MyPlugin]))
+bot_config = BotManager(app=MyApp(plugins=[MyPlugin]))
 
 # set up dispatcher
 dp = Dispatcher()

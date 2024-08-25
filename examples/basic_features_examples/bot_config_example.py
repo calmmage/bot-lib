@@ -3,7 +3,7 @@ from aiogram.types import Message
 from calmapp import App
 from dotenv import load_dotenv
 
-from bot_lib import Handler, HandlerDisplayMode, BotConfig, setup_dispatcher
+from bot_lib import Handler, HandlerDisplayMode, BotManager, setup_dispatcher
 from bot_lib.utils import create_bot, run_bot
 
 
@@ -19,7 +19,7 @@ class MyHandler(Handler):
         await message.answer(app.secret_message)
 
 
-bot_config = BotConfig(app=MyApp())
+bot_config = BotManager(app=MyApp())
 
 # set up dispatcher
 dp = Dispatcher()

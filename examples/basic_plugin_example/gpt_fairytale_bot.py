@@ -2,7 +2,7 @@ from aiogram import Dispatcher
 from dotenv import load_dotenv
 
 from bot_lib import (
-    BotConfig,
+    BotManager,
     setup_dispatcher,
     App,
 )
@@ -13,7 +13,7 @@ from bot_lib.plugins import GptPlugin
 load_dotenv()
 plugins = [GptPlugin]
 app = App(plugins=plugins)
-bot_config = BotConfig(app=app)
+bot_config = BotManager(app=app)
 
 # set up dispatcher
 dp = Dispatcher()
