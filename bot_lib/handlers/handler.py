@@ -121,11 +121,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
 
     @staticmethod
     def get_user(message, forward_priority=False):
-        if (
-            forward_priority
-            and hasattr(message, "forward_from")
-            and message.forward_from
-        ):
+        if forward_priority and hasattr(message, "forward_from") and message.forward_from:
             user = message.forward_from
         else:
             user = message.from_user
@@ -133,11 +129,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
 
     @staticmethod
     def get_name(message, forward_priority=False):
-        if (
-            forward_priority
-            and hasattr(message, "forward_from")
-            and message.forward_from
-        ):
+        if forward_priority and hasattr(message, "forward_from") and message.forward_from:
             user = message.forward_from
         else:
             user = message.from_user
@@ -181,9 +173,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
             return ""
         return text
 
-    async def get_message_text(
-        self, message: Message, as_markdown=False, include_reply=False
-    ) -> str:
+    async def get_message_text(self, message: Message, as_markdown=False, include_reply=False) -> str:
         """
         Extract text from the message - including text, caption, voice messages, and text files
         :param message: aiogram Message object
@@ -191,9 +181,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         :param include_reply: include text from the message this message is replying to
         :return: extracted text concatenated from all sources
         """
-        result = await self._extract_message_text(
-            message, as_markdown, include_reply, as_dict=True
-        )
+        result = await self._extract_message_text(message, as_markdown, include_reply, as_dict=True)
         return "\n\n".join(result.values())
 
     async def _extract_message_text(
@@ -231,11 +219,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         # if message.document:
 
         # todo: extract text from Replies? No, do that explicitly
-        if (
-            include_reply
-            and hasattr(message, "reply_to_message")
-            and message.reply_to_message
-        ):
+        if include_reply and hasattr(message, "reply_to_message") and message.reply_to_message:
             reply_text = await self._extract_message_text(
                 message.reply_to_message,
                 as_markdown=as_markdown,
@@ -349,9 +333,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
 
     @staticmethod
     def _check_is_chat_id(item):
-        return isinstance(item, int) or (
-            isinstance(item, str) and item and item[1:].isdigit()
-        )
+        return isinstance(item, int) or (isinstance(item, str) and item and item[1:].isdigit())
 
     @staticmethod
     def _check_is_text(item):
@@ -449,9 +431,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
                     **kwargs,
                 )
 
-    async def _send_with_parse_mode_fallback(
-        self, chat_id, text, reply_to_message_id=None, parse_mode=None, **kwargs
-    ):
+    async def _send_with_parse_mode_fallback(self, chat_id, text, reply_to_message_id=None, parse_mode=None, **kwargs):
         """
         Send message with parse_mode=None if parse_mode is not supported
         """
@@ -484,9 +464,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
     def send_long_messages_as_files(self):
         return self.config.send_long_messages_as_files
 
-    async def _send_as_file(
-        self, chat_id, text, reply_to_message_id=None, filename=None, **kwargs
-    ):
+    async def _send_as_file(self, chat_id, text, reply_to_message_id=None, filename=None, **kwargs):
         """
         Send text as a file to the chat
         :param chat_id:
@@ -498,9 +476,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         from aiogram.types.input_file import BufferedInputFile
 
         temp_file = BufferedInputFile(text.encode("utf-8"), filename)
-        await self.bot.send_document(
-            chat_id, temp_file, reply_to_message_id=reply_to_message_id, **kwargs
-        )
+        await self.bot.send_document(chat_id, temp_file, reply_to_message_id=reply_to_message_id, **kwargs)
 
     # endregion
 
@@ -517,9 +493,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         If the response text is too long, split it into multiple messages
         """
         chat_id = message.chat.id
-        return await self.send_safe(
-            chat_id, response_text, reply_to_message_id=message.message_id, **kwargs
-        )
+        return await self.send_safe(chat_id, response_text, reply_to_message_id=message.message_id, **kwargs)
 
     async def answer_safe(self, message: Message, response_text: str, **kwargs):
         """
@@ -556,6 +530,14 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
     # endregion
 
     # region new features (unsorted)
+    @property
+    def router(self):
+        if self._router is None:
+            self.logger.info("Router not found. Creating a new one")
+            self._router = self._create_router()
+        return self._router
+
+    @deprecated("Use self.router instead")
     def get_router(self):
         if self._router is None:
             self._router = self._create_router()
@@ -577,20 +559,12 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         if file_desc.file_size < 20 * 1024 * 1024:
             return await self.bot.download(file_desc.file_id, destination=file_path)
         else:
-            return await self.download_large_file(
-                message.chat.username, message.message_id, target_path=file_path
-            )
+            return await self.download_large_file(message.chat.username, message.message_id, target_path=file_path)
 
     def _check_pyrogram_tokens(self):
         # todo: update, rework self.config, make it per-user
-        if not (
-            self.config.api_id.get_secret_value()
-            and self.config.api_hash.get_secret_value()
-        ):
-            raise ValueError(
-                "Telegram api_id and api_hash must be provided for Pyrogram "
-                "to download large files"
-            )
+        if not (self.config.api_id.get_secret_value() and self.config.api_hash.get_secret_value()):
+            raise ValueError("Telegram api_id and api_hash must be provided for Pyrogram " "to download large files")
 
     def _init_pyrogram_client(self):
         return pyrogram.Client(
