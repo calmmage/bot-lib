@@ -1,14 +1,16 @@
 from typing import Callable, Awaitable, Dict, Any
 
+from aiogram import F
 from aiogram import types, Bot
+from aiogram.enums.chat_type import ChatType
 from aiogram.filters import Command
 from aiogram.types import Update
-from calmapp import App
 from loguru import logger
 from typing_extensions import deprecated
 
 from bot_lib.handlers.basic_handler import BasicHandler
 from bot_lib.handlers.handler import HandlerDisplayMode
+from calmapp import App
 
 
 class BotManager:
@@ -89,9 +91,10 @@ class BotManager:
             handler.register_extra_handlers(router)
 
             if handler.has_chat_handler:
-                router.message.register(handler.chat_handler)
+                # todo: only react on messages with text / content - ignore pins etc.
+                # todo: add flexible config to support both group and private chats
+                router.message.register(handler.chat_handler, F.chat.type == ChatType.PRIVATE)
 
-            # dispatcher[handler.name] = router
             dispatcher.include_router(router)
         return commands
 
