@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bot-lib"
-version = "0.6.3" # rename bot_config to bot_manager
+version = "0.6.4" # change func order
 description = "Calmmage Telegram bot library for better aiogram deployment"
 authors = ["Petr Lavrov <petrlavrov@calmmage.com>"]
 readme = "README.md"

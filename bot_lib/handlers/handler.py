@@ -235,13 +235,6 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
             return result
         return "\n\n".join(result.values())
 
-    @deprecated(
-        version="1.0.0",
-        reason="Use _extract_message_text instead. This method is deprecated",
-    )
-    async def _extract_text_from_message(self, message: Message):
-        return await self._extract_message_text(message, include_reply=True)
-
     def _get_short_description(self, name):
         desc = getattr(self, name).__doc__
         if desc is None or desc.strip() == "":
@@ -529,30 +522,6 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
 
     # endregion
 
-    # region new features (unsorted)
-    @property
-    def router(self):
-        if self._router is None:
-            self.logger.info("Router not found. Creating a new one")
-            self._router = self._create_router()
-        return self._router
-
-    @deprecated("Use self.router instead")
-    def get_router(self):
-        if self._router is None:
-            self._router = self._create_router()
-        return self._router
-
-    def _create_router(self, name=None, **kwargs):
-        if name is None:
-            name = self.name
-        return Router(name=name)
-
-    def setup_router(self, router: Router):  # dummy method
-        pass
-
-    # endregion new features (unsorted)
-
     # region file ops
 
     async def download_file(self, message: Message, file_desc, file_path=None):
@@ -637,3 +606,38 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         return self.app_data / "downloads"
 
     # endregion file ops
+
+    # region new features (unsorted)
+    @property
+    def router(self):
+        if self._router is None:
+            self.logger.info("Router not found. Creating a new one")
+            self._router = self._create_router()
+        return self._router
+
+    @deprecated("Use self.router instead")
+    def get_router(self):
+        if self._router is None:
+            self._router = self._create_router()
+        return self._router
+
+    def _create_router(self, name=None, **kwargs):
+        if name is None:
+            name = self.name
+        return Router(name=name)
+
+    def setup_router(self, router: Router):  # dummy method
+        pass
+
+    # endregion new features (unsorted)
+
+    # region Deprecated
+
+    @deprecated(
+        version="1.0.0",
+        reason="Use _extract_message_text instead. This method is deprecated",
+    )
+    async def _extract_text_from_message(self, message: Message):
+        return await self._extract_message_text(message, include_reply=True)
+
+    # endregion Deprecated
