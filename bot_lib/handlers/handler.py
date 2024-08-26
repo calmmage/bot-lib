@@ -104,7 +104,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         pass
 
     # todo: rework into property / detect automatically
-    async def chat_handler(self, message: Message, app: App):
+    async def chat_handler(self, message: Message, app: App, **kwargs):
         raise NotImplementedError("Method chat_handler is not implemented")
 
     # todo: check if I can pass the bot on startup - automatically by dispatcher?
