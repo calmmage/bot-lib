@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bot-lib"
-version = "0.6.5" # chat_handler only private messages for now
+version = "0.6.6" # dummy error handling
 description = "Calmmage Telegram bot library for better aiogram deployment"
 authors = ["Petr Lavrov <petrlavrov@calmmage.com>"]
 readme = "README.md"
