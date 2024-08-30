@@ -1,5 +1,3 @@
-import datetime
-import traceback
 from typing import Callable, Awaitable, Dict, Any
 
 from aiogram import F
@@ -97,9 +95,10 @@ class BotManager:
                 # todo: add flexible config to support both group and private chats
                 router.message.register(handler.chat_handler, F.chat.type == ChatType.PRIVATE)
 
-            dispatcher.include_router(router)
+            if handler.has_error_handler:
+                dispatcher.error.register(handler.error_handler, F.update.message.as_("message"))
 
-        dispatcher.error.register(self.dummy_error_handler, F.update.message.as_("message"))
+            dispatcher.include_router(router)
 
         return commands
 
@@ -130,34 +129,6 @@ class BotManager:
             logger.info(f"Bot url: https://t.me/{bot_info.username}")
 
         dispatcher.startup.register(print_bot_url)
-
-    async def complex_error_handler(self, event: types.ErrorEvent, message: types.Message):
-        # Get chat ID from the message.
-        # This will vary depending on the library/framework you're using.
-        chat_id = message.chat.id
-        error_data = {
-            "timestamp": datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
-            "error": str(event.exception),
-            "traceback": traceback.format_exc(),
-        }
-        self.errors[chat_id].append(error_data)
-
-        # Respond to the user
-        await message.answer("Oops, something went wrong! Use /error or /explainerror command if you " "want details")
-
-    async def dummy_error_handler(self, event: types.ErrorEvent, message: types.Message):
-        # log error to the logger
-        # also send a message to the user
-
-        error_data = {
-            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
-            "error": str(event.exception),
-            "traceback": traceback.format_exc(),
-        }
-
-        logger.error(error_data["traceback"])
-
-        await message.answer("Oops, something went wrong :(")
 
 
 @deprecated("Use BotConfig.setup_dispatcher instead")

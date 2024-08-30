@@ -1,4 +1,3 @@
-import enum
 import asyncio
 import enum
 import os
@@ -17,7 +16,7 @@ from typing import Type, List
 import pyrogram
 from aiogram import Bot, Router
 from aiogram.enums import ParseMode
-from aiogram.types import Message
+from aiogram.types import Message, ErrorEvent
 from calmapp import App
 from calmlib.utils import get_logger
 from deprecated import deprecated
@@ -26,7 +25,7 @@ from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 
 if TYPE_CHECKING:
-    from bot_lib.migration_bot_base.core import App
+    from calmapp.app import App
 
 from bot_lib.migration_bot_base.core.telegram_bot import TelegramBot as OldTelegramBot
 from bot_lib.migration_bot_base.utils.text_utils import (
@@ -96,16 +95,21 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         # Pyrogram
         self.pyrogram_client = self._init_pyrogram_client()
 
-    # abstract method chat_handler - to be implemented by child classes
-    has_chat_handler = False
-
     def register_extra_handlers(self, router):
         # router.message.register(content_types=["location"])(self.handle_location)
         pass
 
+    # abstract method chat_handler - to be implemented by child classes
+    has_chat_handler = False
+
     # todo: rework into property / detect automatically
     async def chat_handler(self, message: Message, app: App, **kwargs):
         raise NotImplementedError("Method chat_handler is not implemented")
+
+    has_error_handler = False
+
+    async def error_handler(self, event: ErrorEvent, message: Message, **kwargs):
+        raise NotImplementedError("Method error_handler is not implemented")
 
     # todo: check if I can pass the bot on startup - automatically by dispatcher?
     def on_startup(self, bot: Bot):
@@ -581,7 +585,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
             cmd.extend(["--target-path", file_path])
         self.logger.debug(f"Running command: {' '.join(cmd)}")
         # Run the command in a separate thread and await its result
-        result = await asyncio.to_thread(subprocess.run, cmd, capture_output=True)
+        result = await asyncio.to_thread(executable=subprocess.run, __func=cmd, capture_output=True, bufsize=0)
         err = result.stderr.strip().decode("utf-8")
         if "ERROR" in err:
             raise Exception(err)
