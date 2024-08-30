@@ -585,7 +585,8 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
             cmd.extend(["--target-path", file_path])
         self.logger.debug(f"Running command: {' '.join(cmd)}")
         # Run the command in a separate thread and await its result
-        result = await asyncio.to_thread(executable=subprocess.run, __func=cmd, capture_output=True, bufsize=0)
+        # todo: check if this actually still works
+        result = await asyncio.to_thread(subprocess.run, cmd, capture_output=True)
         err = result.stderr.strip().decode("utf-8")
         if "ERROR" in err:
             raise Exception(err)
