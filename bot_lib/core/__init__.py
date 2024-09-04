@@ -1,1 +1,1 @@
-from .bot_manager import BotManager, setup_dispatcher
+from .bot_manager import BotManager, setup_dispatcher, BotConfig
