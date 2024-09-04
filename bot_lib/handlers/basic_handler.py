@@ -12,15 +12,13 @@ class BasicHandler(Handler):
     display_mode = HandlerDisplayMode.FULL
     commands = {"start_handler": "start", "help_handler": "help"}
 
-    @staticmethod
-    async def start_handler(message, app: App):
+    async def start_handler(self, message, app: App):
         response_text = app.get_start_message()
-        await message.answer(response_text)
+        await self.answer_safe(message, response_text)
 
-    @staticmethod
-    async def help_handler(message, app: App):
+    async def help_handler(self, message, app: App):
         response_text = app.get_help_message()
-        await message.answer(response_text)
+        await self.reply_safe(message, response_text)
 
     has_error_handler = True
 
@@ -38,7 +36,7 @@ class BasicHandler(Handler):
     #     # Respond to the user
     #     await message.answer("Oops, something went wrong! Use /error or /explain_error command if you " "want details")
 
-    async def dummy_error_handler(self, event: types.ErrorEvent, message: types.Message):
+    async def error_handler(self, event: types.ErrorEvent, message: types.Message):
         """
         log error to the logger
         also send a message to the user
