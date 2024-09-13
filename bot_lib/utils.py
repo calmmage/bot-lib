@@ -25,11 +25,11 @@ def create_bot(token=None):
 
 def setup_bot(app, handlers=None):
     from bot_lib import (
-        BotConfig,
+        BotManager,
         setup_dispatcher,
     )
 
-    bot_config = BotConfig(app=app)
+    bot_config = BotManager(app=app)
 
     # set up dispatcher
     dp = Dispatcher()

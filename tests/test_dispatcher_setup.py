@@ -3,7 +3,7 @@ from aiogram import Dispatcher
 from aiogram.types import Message
 from calmapp import App
 
-from bot_lib import Handler, HandlerDisplayMode, BotConfig, setup_dispatcher
+from bot_lib import Handler, HandlerDisplayMode, BotManager, setup_dispatcher
 
 
 class MyApp(App):
@@ -22,7 +22,7 @@ class TestSetup:
     def test_setup(self):
 
         app = MyApp()
-        bot_config = BotConfig(app=app)
+        bot_config = BotManager(app=app)
 
         # set up dispatcher
         dp = Dispatcher()

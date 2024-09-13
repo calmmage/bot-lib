@@ -1,6 +1,8 @@
 from typing import Callable, Awaitable, Dict, Any
 
+from aiogram import F
 from aiogram import types, Bot
+from aiogram.enums.chat_type import ChatType
 from aiogram.filters import Command
 from aiogram.types import Update
 from calmapp import App
@@ -11,7 +13,7 @@ from bot_lib.handlers.basic_handler import BasicHandler
 from bot_lib.handlers.handler import HandlerDisplayMode
 
 
-class BotConfig:
+class BotManager:
     # todo: rewrite this to be Pydantic basesettings and load from env
     DEFAULT_APP = App
     DEFAULT_HANDLERS = [
@@ -67,9 +69,7 @@ class BotConfig:
                 if isinstance(aliases, str):
                     aliases = [aliases]
                 aliases = [alias.lstrip("/") for alias in aliases]
-                router.message.register(
-                    getattr(handler, command), Command(commands=aliases)
-                )
+                router.message.register(getattr(handler, command), Command(commands=aliases))
 
                 # todo: use calmlib util - 'compare enums' - find wind find_ and add to calmlib
                 if handler.display_mode == HandlerDisplayMode.FULL:
@@ -85,20 +85,21 @@ class BotConfig:
             if handler.display_mode == HandlerDisplayMode.HELP_COMMAND:
                 name = handler.name or handler.__class__.__name__
                 alias = f"help_{name.lower()}"
-                router.message.register(
-                    handler.nested_help_handler, Command(commands=[alias])
-                )
-                commands.append(
-                    (alias, "Show help for {name} - list all available commands")
-                )
+                router.message.register(handler.nested_help_handler, Command(commands=[alias]))
+                commands.append((alias, "Show help for {name} - list all available commands"))
 
             handler.register_extra_handlers(router)
 
             if handler.has_chat_handler:
-                router.message.register(handler.chat_handler)
+                # todo: only react on messages with text / content - ignore pins etc.
+                # todo: add flexible config to support both group and private chats
+                router.message.register(handler.chat_handler, F.chat.type == ChatType.PRIVATE)
 
-            # dispatcher[handler.name] = router
+            if handler.has_error_handler:
+                dispatcher.error.register(handler.error_handler, F.update.message.as_("message"))
+
             dispatcher.include_router(router)
+
         return commands
 
     def _setup_set_bot_commands(self, dispatcher, commands):
@@ -115,9 +116,7 @@ class BotConfig:
                 if c in [bc.command for bc in bot_commands]:
                     logger.warning(f"Duplicate command: {c}")
                     continue
-                bot_commands.append(
-                    types.BotCommand(command=c, description=d or NO_COMMAND_DESCRIPTION)
-                )
+                bot_commands.append(types.BotCommand(command=c, description=d or NO_COMMAND_DESCRIPTION))
             logger.debug(f"Setting bot commands: {bot_commands}")
             await bot.set_my_commands(bot_commands)
 
@@ -133,5 +132,8 @@ class BotConfig:
 
 
 @deprecated("Use BotConfig.setup_dispatcher instead")
-def setup_dispatcher(dispatcher, bot_config: BotConfig, extra_handlers=None):
+def setup_dispatcher(dispatcher, bot_config: BotManager, extra_handlers=None):
     bot_config.setup_dispatcher(dispatcher, extra_handlers)
+
+
+BotConfig = BotManager
