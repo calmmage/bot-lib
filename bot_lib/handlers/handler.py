@@ -124,7 +124,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         return self.bot
 
     @staticmethod
-    def get_user(message, forward_priority=False):
+    def get_user(message: Message, forward_priority=False):
         if forward_priority and hasattr(message, "forward_from") and message.forward_from:
             user = message.forward_from
         else:
