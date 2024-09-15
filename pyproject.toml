@@ -25,7 +25,9 @@ toml = ">=0.10"
 [tool.poetry.group.extras.dependencies]
 # dependencies for extra features
 pydub = ">=0.25"
-pyrogram = ">=2.0.106"
+#pyrogram = ">=2.0.106"  # todo migrate to another lib
+# for now - use this fork
+pyrogram = { git = "https://github.com/KurimuzonAkuma/pyrogram.git", branch = "dev" }
 #tgcrypto = "^1.2.5"  # necessary for pyrogram but breaks dependencies
 # mtprotocrypt = "1.2.6.5b0"  # supposed tgcrypto replacement - not fixes pyrogram
 #easydict = ">=1.10"
