@@ -13,7 +13,6 @@ from typing import Dict
 from typing import TYPE_CHECKING, Union, Optional
 from typing import Type, List
 
-import pyrogram
 from aiogram import Bot, Router
 from aiogram.enums import ParseMode
 from aiogram.types import Message, ErrorEvent
@@ -93,7 +92,13 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         self._build_commands_and_add_to_list()
 
         # Pyrogram
-        self.pyrogram_client = self._init_pyrogram_client()
+        self._pyrogram_client = None
+
+    @property
+    def pyrogram_client(self):
+        if self._pyrogram_client is None:
+            self._pyrogram_client = self._init_pyrogram_client()
+        return self._pyrogram_client
 
     def register_extra_handlers(self, router):
         # router.message.register(content_types=["location"])(self.handle_location)
@@ -537,6 +542,8 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
             raise ValueError("Telegram api_id and api_hash must be provided for Pyrogram " "to download large files")
 
     def _init_pyrogram_client(self):
+        import pyrogram
+
         return pyrogram.Client(
             self.__class__.__name__,
             api_id=self.config.api_id.get_secret_value(),
