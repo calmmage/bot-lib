@@ -9,7 +9,7 @@ from loguru import logger
 from typing_extensions import deprecated
 
 from bot_lib.handlers.basic_handler import BasicHandler
-from bot_lib.handlers.handler import HandlerDisplayMode
+from bot_lib.handlers.handlerbase import HandlerDisplayMode
 from calmapp import App
 
 

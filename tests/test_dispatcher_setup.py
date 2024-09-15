@@ -1,16 +1,15 @@
-import pytest
 from aiogram import Dispatcher
 from aiogram.types import Message
-from calmapp import App
 
-from bot_lib import Handler, HandlerDisplayMode, BotManager, setup_dispatcher
+from bot_lib import HandlerBase, HandlerDisplayMode, BotManager, setup_dispatcher
+from calmapp import App
 
 
 class MyApp(App):
     secret_message = "Hello, Calm world!"
 
 
-class MyHandler(Handler):
+class MyHandler(HandlerBase):
     name = "myBot"
     display_mode = HandlerDisplayMode.FULL
 

@@ -3,18 +3,18 @@ from typing import List
 from aiogram import Dispatcher
 from aiogram.filters import Command
 from aiogram.types import Message
-from calmapp import App
 from dotenv import load_dotenv
 
-from bot_lib import Handler, HandlerDisplayMode
+from bot_lib import HandlerBase, HandlerDisplayMode
 from bot_lib.utils import create_bot, run_bot
+from calmapp import App
 
 
 class MyApp(App):
     secret_message = "Hello, Calm world!"
 
 
-class MyHandler(Handler):
+class MyHandler(HandlerBase):
     name = "myBot"
     display_mode = HandlerDisplayMode.FULL
 
@@ -22,13 +22,11 @@ class MyHandler(Handler):
         await message.answer(app.secret_message)
 
 
-def bind_bot_to_handler_on_dispatcher_startup(handler: Handler, dispatcher: Dispatcher):
+def bind_bot_to_handler_on_dispatcher_startup(handler: HandlerBase, dispatcher: Dispatcher):
     dispatcher.startup.register(handler.on_startup)
 
 
-def bind_bot_to_handlers_on_dispatcher_startup(
-    handlers: List[Handler], dispatcher: Dispatcher
-):
+def bind_bot_to_handlers_on_dispatcher_startup(handlers: List[HandlerBase], dispatcher: Dispatcher):
     # todo: check if this doesn't override the previous handlers
     for handler in handlers:
         dispatcher.startup.register(handler.on_startup)

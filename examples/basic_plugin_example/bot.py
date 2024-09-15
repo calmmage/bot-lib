@@ -1,15 +1,15 @@
 from aiogram import Dispatcher
 from aiogram.types import Message
-from calmapp import App, Plugin
 from dotenv import load_dotenv
 
 from bot_lib import (
-    Handler,
+    HandlerBase,
     HandlerDisplayMode,
     BotManager,
     setup_dispatcher,
 )
 from bot_lib.utils import create_bot, run_bot
+from calmapp import App, Plugin
 
 
 class MyPlugin(Plugin):
@@ -26,7 +26,7 @@ class MyApp(App):
         return self.plugins["my_plugin"]
 
 
-class MyHandler(Handler):
+class MyHandler(HandlerBase):
     name = "myBot"
     display_mode = HandlerDisplayMode.FULL
     commands = {"custom_handler": "custom"}

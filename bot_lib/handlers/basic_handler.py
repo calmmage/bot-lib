@@ -2,12 +2,12 @@ import traceback
 from datetime import datetime
 
 from aiogram import types
+
+from bot_lib.handlers import HandlerBase, HandlerDisplayMode
 from calmapp import App
 
-from bot_lib.handlers import Handler, HandlerDisplayMode
 
-
-class BasicHandler(Handler):
+class BasicHandler(HandlerBase):
     name = "basic"
     display_mode = HandlerDisplayMode.FULL
     commands = {"start_handler": "start", "help_handler": "help"}

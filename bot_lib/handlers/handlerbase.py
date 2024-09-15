@@ -1,3 +1,4 @@
+import abc
 import asyncio
 import enum
 import os
@@ -16,17 +17,17 @@ from typing import Type, List
 from aiogram import Bot, Router
 from aiogram.enums import ParseMode
 from aiogram.types import Message, ErrorEvent
-from calmapp import App
 from calmlib.utils import get_logger
-from typing_extensions import deprecated
 from dotenv import load_dotenv
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
+from typing_extensions import deprecated
+
+from calmapp import App
 
 if TYPE_CHECKING:
     from calmapp.app import App
 
-from bot_lib.migration_bot_base.core.telegram_bot import TelegramBot as OldTelegramBot
 from bot_lib.migration_bot_base.utils.text_utils import (
     MAX_TELEGRAM_MESSAGE_LENGTH,
     split_long_message,
@@ -66,7 +67,9 @@ class HandlerConfig(BaseSettings):
 
 
 # abstract
-class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTelegramBot
+class HandlerBase(abc.ABC):
+    # region Actually Base
+
     name: str = None
     display_mode: HandlerDisplayMode = HandlerDisplayMode.HELP_COMMAND
     commands: Dict[str, List[str]] = {}  # dict handler_func_name -> command aliases
@@ -81,15 +84,20 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         load_dotenv()
         return self._config_class(**kwargs)
 
-    def __init__(self, config: _config_class = None, app_data="./app_data"):
+    def _base__init__(self, config: _config_class = None, app_data="./app_data"):
         if config is None:
             config = self._load_config()
         self.config = config
         self._app_data = Path(app_data)
-        super().__init__()
-        self.bot = None
         self._router = None
         self._build_commands_and_add_to_list()
+
+    # endregion Actually Base
+
+    def __init__(self, config: _config_class = None, app_data="./app_data"):
+        self._base__init__(config, app_data)
+
+        self.bot = None
 
         # Pyrogram
         self._pyrogram_client = None
@@ -647,3 +655,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         return await self._extract_message_text(message, include_reply=True)
 
     # endregion Deprecated
+
+
+# todo: deprecated - remove
+Handler = HandlerBase

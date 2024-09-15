@@ -3,10 +3,10 @@ from textwrap import dedent
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
 from aiogram.utils.markdown import hbold
-from calmapp import App
 
-from bot_lib.handlers import Handler, BasicHandler, HandlerDisplayMode
+from bot_lib.handlers import HandlerBase, BasicHandler, HandlerDisplayMode
 from bot_lib.utils import setup_bot, create_bot
+from calmapp import App
 
 __ = create_bot, setup_bot
 
@@ -33,7 +33,7 @@ def setup_dispatcher_with_demo_handler(dp):
     dp.message.register(handler.help_handler, Command("help"))
 
 
-class FairytaleHandler(Handler):
+class FairytaleHandler(HandlerBase):
     name = "fairytale_bot"
     display_mode = HandlerDisplayMode.FULL
     commands = {
@@ -62,8 +62,6 @@ class FairytaleHandler(Handler):
         """Tell a fairytale on a specified topic and fabulate it."""
         text = message.text
         prompt = self.fairytale_prompt.format(text=text)
-        response = await app.gpt.complete_text(
-            prompt, max_tokens=self.FAIRYTALE_TOKEN_LIMIT
-        )
+        response = await app.gpt.complete_text(prompt, max_tokens=self.FAIRYTALE_TOKEN_LIMIT)
         # todo: use send_safe util instead
         await message.answer(response)

@@ -1,8 +1,8 @@
-from bot_lib.handlers import Handler, HandlerDisplayMode
+from bot_lib.handlers import HandlerBase, HandlerDisplayMode
 
 
-class DevHandler(Handler):
-    name = 'dev'
+class DevHandler(HandlerBase):
+    name = "dev"
     display_mode = HandlerDisplayMode.HELP_MESSAGE
 
     async def ping_handler(self, message):

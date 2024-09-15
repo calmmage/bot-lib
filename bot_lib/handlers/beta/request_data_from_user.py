@@ -5,14 +5,14 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message
 
-from bot_lib import Handler, HandlerDisplayMode
+from bot_lib import HandlerBase, HandlerDisplayMode
 
 
 class CustomState(StatesGroup):
     Waiting = State("waiting_for_user_input")
 
 
-class ExtensionHandler(Handler):
+class ExtensionHandler(HandlerBase):
 
     # Shared dictionary to store user inputs
 

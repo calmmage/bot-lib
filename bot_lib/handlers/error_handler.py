@@ -4,10 +4,10 @@ from datetime import datetime
 
 from aiogram import types
 
-from bot_lib.handlers.handler import Handler
+from bot_lib.handlers.handlerbase import HandlerBase
 
 
-class ErrorHandler(Handler):
+class ErrorHandler(HandlerBase):
     # todo: rework to use reply_safe etc.
 
     async def error_handler(self, event: types.ErrorEvent, message: types.Message):
@@ -22,10 +22,7 @@ class ErrorHandler(Handler):
         self.errors[chat_id].append(error_data)
 
         # Respond to the user
-        await message.answer(
-            "Oops, something went wrong! Use /error or /explainerror command if you "
-            "want details"
-        )
+        await message.answer("Oops, something went wrong! Use /error or /explainerror command if you " "want details")
 
     commands = {
         "error_command_handler": "/error",
