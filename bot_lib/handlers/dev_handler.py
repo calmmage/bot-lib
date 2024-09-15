@@ -1,4 +1,4 @@
-from bot_lib.handlers import HandlerBase, HandlerDisplayMode
+from bot_lib.handlers.handler import HandlerBase, HandlerDisplayMode
 
 
 class DevHandler(HandlerBase):

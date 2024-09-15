@@ -2,9 +2,9 @@ import traceback
 from datetime import datetime
 
 from aiogram import types
-
-from bot_lib.handlers import HandlerBase, HandlerDisplayMode
 from calmapp import App
+
+from bot_lib.handlers.handler import HandlerBase, HandlerDisplayMode
 
 
 class BasicHandler(HandlerBase):
