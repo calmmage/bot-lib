@@ -19,7 +19,7 @@ from aiogram.enums import ParseMode
 from aiogram.types import Message, ErrorEvent
 from calmapp import App
 from calmlib.utils import get_logger
-from deprecated import deprecated
+from typing_extensions import deprecated
 from dotenv import load_dotenv
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
@@ -116,10 +116,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
         self.bot = bot
 
     @property
-    @deprecated(
-        version="1.0.0",
-        reason="Found old (pre-migration) style usage of _aiogram_bot. please rework and replace with self.bot",
-    )
+    @deprecated("Found old (pre-migration) style usage of _aiogram_bot. please rework and replace with self.bot")
     def _aiogram_bot(self):
         return self.bot
 
@@ -638,10 +635,7 @@ class Handler(OldTelegramBot):  # todo: add abc.ABC back after removing OldTeleg
 
     # region Deprecated
 
-    @deprecated(
-        version="1.0.0",
-        reason="Use _extract_message_text instead. This method is deprecated",
-    )
+    @deprecated("Use _extract_message_text instead. This method is deprecated")
     async def _extract_text_from_message(self, message: Message):
         return await self._extract_message_text(message, include_reply=True)
 

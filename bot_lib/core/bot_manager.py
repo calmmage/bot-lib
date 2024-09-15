@@ -5,12 +5,12 @@ from aiogram import types, Bot
 from aiogram.enums.chat_type import ChatType
 from aiogram.filters import Command
 from aiogram.types import Update
-from calmapp import App
 from loguru import logger
 from typing_extensions import deprecated
 
 from bot_lib.handlers.basic_handler import BasicHandler
 from bot_lib.handlers.handler import HandlerDisplayMode
+from calmapp import App
 
 
 class BotManager:
@@ -41,7 +41,7 @@ class BotManager:
         self._setup_set_bot_commands(dispatcher, commands)
         self._setup_print_bot_url(dispatcher)
 
-        if self.app.config.enable_message_history:
+        if self.app.config.plugin_flags.enable_message_history:
             dispatcher.update.outer_middleware.register(self.message_history_middleware)
 
     async def message_history_middleware(
