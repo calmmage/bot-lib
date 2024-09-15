@@ -14,16 +14,16 @@ from typing import Dict
 from typing import TYPE_CHECKING, Union, Optional
 from typing import Type, List
 
+import loguru
 from aiogram import Bot, Router
 from aiogram.enums import ParseMode
 from aiogram.types import Message, ErrorEvent
+from calmapp import App
 from calmlib.utils import get_logger
 from dotenv import load_dotenv
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 from typing_extensions import deprecated
-
-from calmapp import App
 
 if TYPE_CHECKING:
     from calmapp.app import App
@@ -85,6 +85,7 @@ class HandlerBase(abc.ABC):
         return self._config_class(**kwargs)
 
     def _base__init__(self, config: _config_class = None, app_data="./app_data"):
+        self.logger = loguru.logger.bind(component=self.__class__.__name__)
         if config is None:
             config = self._load_config()
         self.config = config
@@ -96,7 +97,7 @@ class HandlerBase(abc.ABC):
 
     def __init__(self, config: _config_class = None, app_data="./app_data"):
         self._base__init__(config, app_data)
-
+        self.logger = loguru.logger.bind(component=self.__class__.__name__)
         self.bot = None
 
         # Pyrogram

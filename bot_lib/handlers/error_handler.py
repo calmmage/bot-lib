@@ -4,7 +4,7 @@ from datetime import datetime
 
 from aiogram import types
 
-from bot_lib.handlers.handlerbase import HandlerBase
+from bot_lib.handlers.handler import HandlerBase
 
 
 class ErrorHandler(HandlerBase):

@@ -16,6 +16,7 @@ from aiogram import types
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from pydantic import BaseModel
+from typing_extensions import deprecated
 
 if TYPE_CHECKING:
     from bot_lib.migration_bot_base.core import App
@@ -67,6 +68,8 @@ class TelegramBotBase(ABC):
         # self._dp: aiogram.Dispatcher = aiogram.Dispatcher(bot=self._aiogram_bot)
         # self._me = None
 
+    # todo: check if I need this method
+    @deprecated("Commands are registered by bot managed now")
     def register_command(self, handler, commands=None, description=None, filters=None):
         if filters is None:
             filters = ()
@@ -85,10 +88,10 @@ class TelegramBotBase(ABC):
 
     NO_COMMAND_DESCRIPTION = "No description provided"
 
+    @deprecated("Commands are updated by bot managed now")
     async def _set_aiogram_bot_commands(self):
         bot_commands = [
-            types.BotCommand(command=c, description=d or self.NO_COMMAND_DESCRIPTION)
-            for c, d in self.commands
+            types.BotCommand(command=c, description=d or self.NO_COMMAND_DESCRIPTION) for c, d in self.commands
         ]
         await self._aiogram_bot.set_my_commands(bot_commands)
 
@@ -132,9 +135,7 @@ Commands = Union[str, List[str]]
 
 
 # use decorator to mark commands and parse automatically
-def mark_command(
-    commands: Commands, description: str = None, filters: list = None, dev=False
-):
+def mark_command(commands: Commands, description: str = None, filters: list = None, dev=False):
     if isinstance(commands, str):
         commands = [commands]
 
@@ -241,9 +242,7 @@ class TelegramBot(TelegramBotBase):
         Replace with your own implementation
         """
         message_text = await self._extract_message_text(message)
-        self.logger.info(
-            f"Received message", user=message.from_user.username, data=message_text
-        )
+        self.logger.info(f"Received message", user=message.from_user.username, data=message_text)
         if self._multi_message_mode:
             self.messages_stack[message.chat.id].append(message)
         else:
@@ -284,9 +283,7 @@ class TelegramBot(TelegramBotBase):
         # activate multi-message mode
         chat_id = message.chat.id
         self._multi_message_mode[chat_id] = True
-        self.logger.info(
-            "Multi-message mode activated", user=message.from_user.username
-        )
+        self.logger.info("Multi-message mode activated", user=message.from_user.username)
         # todo: initiate timeout and if not deactivated - process messages
         #  automatically
 
@@ -302,9 +299,7 @@ class TelegramBot(TelegramBotBase):
         )
         response = await self.process_messages_stack(chat_id)
         await message.answer(response)
-        self.logger.info(
-            "Messages processed", user=message.from_user.username, data=response
-        )
+        self.logger.info("Messages processed", user=message.from_user.username, data=response)
 
     async def process_messages_stack(self, chat_id):
         """

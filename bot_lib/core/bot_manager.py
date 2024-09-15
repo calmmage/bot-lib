@@ -5,12 +5,12 @@ from aiogram import types, Bot
 from aiogram.enums.chat_type import ChatType
 from aiogram.filters import Command
 from aiogram.types import Update
+from calmapp import App
 from loguru import logger
 from typing_extensions import deprecated
 
 from bot_lib.handlers.basic_handler import BasicHandler
-from bot_lib.handlers.handlerbase import HandlerDisplayMode
-from calmapp import App
+from bot_lib.handlers.handler import HandlerDisplayMode
 
 
 class BotManager:
