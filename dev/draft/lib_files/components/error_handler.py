@@ -1,7 +1,7 @@
 import traceback
 from datetime import datetime
 
-from aiogram import types
+from aiogram import types, Dispatcher
 from pydantic_settings import BaseSettings
 
 from dev.draft.easter_eggs.main import get_easter_egg
@@ -45,3 +45,7 @@ async def error_handler(event: types.ErrorEvent):
             response += f"\nHere, take this instead: \n{get_easter_egg()}"
 
         await event.update.message.answer(response)
+
+
+def setup_dispatcher(dp: Dispatcher):
+    dp.errors.register(error_handler)
