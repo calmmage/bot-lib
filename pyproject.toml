@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nbl"
-version = "0.0.3" # clean component example
+version = "0.0.4" # update error handler
 description = "Calmmage Telegram bot library for better aiogram deployment"
 authors = ["Petr Lavrov <petrlavrov@calmmage.com>"]
 readme = "README.md"

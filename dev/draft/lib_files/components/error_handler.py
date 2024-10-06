@@ -1,7 +1,7 @@
 import traceback
 from datetime import datetime
 
-from aiogram import types, Dispatcher
+from aiogram import types, Dispatcher, Bot
 from pydantic_settings import BaseSettings
 
 from dev.draft.easter_eggs.main import get_easter_egg
@@ -13,6 +13,7 @@ logger = get_logger()
 class ErrorHandlingSettings(BaseSettings):
     enabled: bool = True
     easter_eggs: bool = True
+    developer_chat_id: int = 0
 
     class Config:
         env_prefix = "ERROR_HANDLING_"
@@ -21,7 +22,7 @@ class ErrorHandlingSettings(BaseSettings):
         extra = "ignore"
 
 
-async def error_handler(event: types.ErrorEvent):
+async def error_handler(event: types.ErrorEvent, bot: Bot):
     """
     log error to the logger
     also send a message to the user
@@ -30,14 +31,20 @@ async def error_handler(event: types.ErrorEvent):
 
     deps = get_dependency_manager()
 
+    tb = traceback.format_exc()
+    # cut redundant part of the traceback:
+    tb = tb.split(
+        """    return await wrapped()
+           ^^^^^^^^^^^^^^^"""
+    )[-1]
     error_data = {
         "timestamp": datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
         "error": str(event.exception),
-        "traceback": traceback.format_exc(),
+        "traceback": tb,
+        "user": event.update.message.from_user.username,
     }
 
-    logger.error(error_data["traceback"])
-    # logger.debug(type(event.update))
+    logger.error(tb)
 
     if event.update.message:
         response = "Oops, something went wrong :("
@@ -46,6 +53,22 @@ async def error_handler(event: types.ErrorEvent):
 
         await event.update.message.answer(response)
 
+    # send the report to the developer
+    if deps.nbl_settings.error_handling.developer_chat_id:
+        error_description = f"Error processing message:"
+        for k, v in error_data.items():
+            error_description += f"\n{k}: {v}"
+        await bot.send_message(
+            chat_id=deps.nbl_settings.error_handling.developer_chat_id, text=f"Error processing message:\n"
+        )
+
 
 def setup_dispatcher(dp: Dispatcher):
+    from dev.draft.lib_files.dependency_manager import get_dependency_manager
+
+    # check required dependencies
+    deps = get_dependency_manager()
+    if not deps.nbl_settings:
+        raise ValueError("Dependency manager is missing nbl_settings - required for error handling")
+
     dp.errors.register(error_handler)
