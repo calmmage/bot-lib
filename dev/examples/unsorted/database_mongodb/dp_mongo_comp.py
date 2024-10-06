@@ -9,7 +9,7 @@ class MongoDatabaseSettings(BaseSettings):
     database: str = "test"
 
     class Config:
-        env_prefix = "MONGO_DATABASE_"
+        env_prefix = "NBL_MONGO_DATABASE_"
         env_file = ".env"
         env_file_encoding = "utf-8"
         extra = "ignore"

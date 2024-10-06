@@ -2,7 +2,7 @@
 BotManager class is responsible for setting up the bot, dispatcher etc.
 """
 
-from dev.draft.lib_files.components import error_handler, print_bot_url
+from dev.draft.lib_files.components import error_handler, print_bot_url, bot_commands_menu
 
 from dev.draft.lib_files.dependency_manager import DependencyManager
 from dev.draft.lib_files.nbl_settings import NBLSettings
@@ -33,5 +33,8 @@ class BotManager(metaclass=Singleton):
 
         if self.settings.print_bot_url.enabled:
             print_bot_url.setup_dispatcher(dp)
+
+        if self.settings.bot_commands_menu.enabled:
+            bot_commands_menu.setup_dispatcher(dp)
 
     # def setup_bot(self, bot):

@@ -8,9 +8,10 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
+from dotenv import load_dotenv
 
 from dev.draft.lib_files.bot_manager import BotManager
-from dotenv import load_dotenv
+from dev.draft.lib_files.components.bot_commands_menu import add_command
 
 load_dotenv()
 # Bot token can be obtained via https://t.me/BotFather
@@ -19,13 +20,17 @@ TOKEN = getenv("TELEGRAM_BOT_TOKEN")
 dp = Dispatcher()
 
 
+@add_command("start")
 @dp.message(CommandStart())
 async def command_start_handler(message: Message) -> None:
+    """Send a welcome message when the command /start is issued"""
     await message.answer(f"Hello, {html.bold(message.from_user.full_name)}!")
 
 
+@add_command("error")
 @dp.message(Command("error"))
 async def command_error_handler(message: Message) -> None:
+    """Raise an exception to test error handling"""
     raise Exception("Something Went Wrong")
 
 
@@ -41,10 +46,6 @@ async def echo_handler(message: Message) -> None:
 
 bm = BotManager()
 bm.setup_dispatcher(dp)
-
-# todo: let's register our commands:
-# /start - to start the bot
-# /error - to raise an exception
 
 
 async def main() -> None:
