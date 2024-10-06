@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nbl"
-version = "0.0.2" # start fresh
+version = "0.0.3" # clean component example
 description = "Calmmage Telegram bot library for better aiogram deployment"
 authors = ["Petr Lavrov <petrlavrov@calmmage.com>"]
 readme = "README.md"
@@ -26,16 +26,10 @@ toml = ">=0.10"
 # dependencies for extra features
 pydub = ">=0.25"
 openai = ">=1.45"
-#pyrogram = ">=2.0.106"  # todo migrate to another lib
-# for now - use this fork. Todo: troubleshoot (doesn't seem to be working)
 pyrogram = { git = "https://github.com/KurimuzonAkuma/pyrogram.git", branch = "dev" }
+telethon = "*"
 tgcrypto = ">=1.2.5"  # necessary for pyrogram but breaks dependencies
-# mtprotocrypt = "1.2.6.5b0"  # supposed tgcrypto replacement - not fixes pyrogram
-#easydict = ">=1.10"
 
-# legacy
-#gpt-kit = { git = "https://github.com/calmmage/gpt-kit.git", branch = "gpt-engine" }
-#mongoengine = ">=0.28.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = ">=6"
@@ -52,7 +46,6 @@ tqdm = ">=4"
 # pandas = "2.1.0"
 black = ">=24"
 pre-commit = ">=3.8"
-tqdm = "*"
 
 # AI from parent libs, if necessary
 #langchain-anthropic = ">=0.2"

@@ -8,9 +8,11 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message
-
-from dev.draft.lib_files.bot_manager import BotManager
 from dotenv import load_dotenv
+
+from dev.draft.lib_files.components import error_handler, print_bot_url
+from dev.draft.lib_files.dependency_manager import DependencyManager
+from dev.draft.lib_files.nbl_settings import NBLSettings
 
 load_dotenv()
 # Bot token can be obtained via https://t.me/BotFather
@@ -39,12 +41,19 @@ async def echo_handler(message: Message) -> None:
         await message.answer("Nice try!")
 
 
-bm = BotManager()
-bm.setup_dispatcher(dp)
+# ---------------------------------------
+# region NBL CONTENT START HERE
+# ---------------------------------------
+deps = DependencyManager(nbl_settings=NBLSettings())
+error_handler.setup_dispatcher(dp)
+print_bot_url.setup_dispatcher(dp)
 
 # todo: let's register our commands:
 # /start - to start the bot
 # /error - to raise an exception
+# ---------------------------------------
+# region NBL CONTENT END HERE
+# ---------------------------------------
 
 
 async def main() -> None:
